@@ -1,0 +1,7 @@
+export type PortfolioKind='project'|'writing'|'code'|'design'|'presentation'|'reflection'|'certificate';
+export interface PortfolioArtifact{id:string;title:string;kind:PortfolioKind;subject:string;topic:string;description:string;createdAt:string;updatedAt:string;teacherFeedback?:string;grade?:number}
+const key=(userId?:string)=>`eduflow_portfolio:${encodeURIComponent(userId||'anonymous')}`;
+export function readPortfolio(userId?:string):PortfolioArtifact[]{try{const value=JSON.parse(localStorage.getItem(key(userId))||'[]');return Array.isArray(value)?value.filter(item=>item&&typeof item.id==='string'&&typeof item.title==='string'):[]}catch{return[]}}
+export function saveArtifact(input:Omit<PortfolioArtifact,'id'|'createdAt'|'updatedAt'>,userId?:string,id?:string){if(!input.title.trim())throw new Error('Add a title before saving');const list=readPortfolio(userId);const old=list.find(item=>item.id===id);const item:PortfolioArtifact={...input,title:input.title.trim(),id:id||`${Date.now()}-${Math.random().toString(36).slice(2)}`,createdAt:old?.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};localStorage.setItem(key(userId),JSON.stringify([item,...list.filter(row=>row.id!==item.id)]));return item}
+export function deleteArtifact(id:string,userId?:string){const next=readPortfolio(userId).filter(item=>item.id!==id);localStorage.setItem(key(userId),JSON.stringify(next));return next}
+export function exportPortfolio(userId?:string){return JSON.stringify(readPortfolio(userId),null,2)}

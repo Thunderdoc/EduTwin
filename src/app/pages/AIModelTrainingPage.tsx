@@ -47,7 +47,7 @@ import {
   XCircle,
   Info,
   Flame,
-  BarChart,
+  BarChart as BarChartIcon,
   LineChart as LineChartIcon,
   Waves,
   Box,
@@ -55,6 +55,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ScatterChart, Scatter } from 'recharts';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import Navigation from '../components/Navigation';
 
 // Training data for visualization
 const generateTrainingData = (epochs: number) => {
@@ -227,8 +228,10 @@ export default function AIModelTrainingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50">
+      <Navigation />
+      <div className="lg:ml-64 p-6 pt-20 lg:pt-6">
+        <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1404,6 +1407,7 @@ export default function AIModelTrainingPage() {
               </TabsContent>
             </Tabs>
           </div>
+        </div>
         </div>
       </div>
     </div>

@@ -3,6 +3,8 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { useNavigate } from 'react-router';
 import { Navigation } from '../components/Navigation';
+import { useApp } from '../context/AppContext';
+import { dueReviews, weakestTopics } from '../services/learningProgress';
 import { 
   ArrowLeft, 
   AlertTriangle, 
@@ -15,32 +17,10 @@ import {
   Star
 } from 'lucide-react';
 
-const academicSuggestions = [
-  {
-    title: 'Advanced Calculus',
-    type: 'Weak Topic',
-    priority: 'High',
-    reason: 'Score below 65% in last 3 assessments',
-    action: 'Review derivatives and integrals',
-  },
-  {
-    title: 'Data Structures',
-    type: 'Revision Needed',
-    priority: 'Medium',
-    reason: 'Last studied 2 weeks ago',
-    action: 'Practice tree and graph problems',
-  },
-  {
-    title: 'Essay Writing',
-    type: 'Weak Topic',
-    priority: 'Medium',
-    reason: 'Needs improvement in structure',
-    action: 'Learn paragraph organization',
-  },
-];
 
 const techSkills = [
   {
+    id: 'python-programming',
     title: 'Python Programming',
     icon: Code,
     level: 'Beginner to Advanced',
@@ -49,6 +29,7 @@ const techSkills = [
     trending: true,
   },
   {
+    id: 'web-development',
     title: 'Web Development',
     icon: Code,
     level: 'Beginner',
@@ -57,6 +38,7 @@ const techSkills = [
     trending: true,
   },
   {
+    id: 'ai-machine-learning',
     title: 'AI & Machine Learning',
     icon: Code,
     level: 'Intermediate',
@@ -68,6 +50,7 @@ const techSkills = [
 
 const nonTechSkills = [
   {
+    id: 'ui-ux-design',
     title: 'UI/UX Design',
     icon: Palette,
     level: 'Beginner',
@@ -75,6 +58,7 @@ const nonTechSkills = [
     description: 'Learn design principles, wireframing, and prototyping tools',
   },
   {
+    id: 'communication-skills',
     title: 'Communication Skills',
     icon: MessageSquare,
     level: 'All Levels',
@@ -82,6 +66,7 @@ const nonTechSkills = [
     description: 'Enhance verbal and written communication for professional success',
   },
   {
+    id: 'creative-thinking',
     title: 'Creative Thinking',
     icon: Lightbulb,
     level: 'All Levels',
@@ -92,6 +77,10 @@ const nonTechSkills = [
 
 export default function SmartRecommendationsPage() {
   const navigate = useNavigate();
+  const { learnerProfile } = useApp();
+  const weak = weakestTopics(learnerProfile?.grade, 4);
+  const reviews = dueReviews().filter((item) => learnerProfile?.grade === undefined || item.grade === learnerProfile.grade);
+  const academicSuggestions = weak.length ? weak.map((item) => ({ title: item.topic, type: item.nextReviewAt && Date.parse(item.nextReviewAt) <= Date.now() ? 'Review Due' : 'Needs Practice', priority: item.mastery < 50 ? 'High' : 'Medium', reason: `${item.mastery}% saved mastery after ${item.attempts} attempt${item.attempts === 1 ? '' : 's'}`, action: reviews.some((review) => review.id === item.id) ? 'Complete a spaced review now' : `Revisit ${item.subject} and retry the check`, grade: item.grade, subject: item.subject })) : [];
 
   return (
     <>
@@ -107,7 +96,7 @@ export default function SmartRecommendationsPage() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Smart Recommendations
             </h1>
-            <p className="text-gray-600 mt-2">AI-powered suggestions to enhance your learning journey</p>
+            <p className="text-gray-600 mt-2">Study suggestions from your scored lesson checks and saved review schedule. Skill courses below are available to explore.</p>
           </div>
 
           {/* Academic Suggestions */}
@@ -117,7 +106,7 @@ export default function SmartRecommendationsPage() {
                 <BookOpen className="w-5 h-5 text-blue-600" />
                 Academic Suggestions
               </CardTitle>
-              <CardDescription>Focus areas based on your performance</CardDescription>
+              <CardDescription>Topics with objective evidence of needing more practice</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -152,12 +141,13 @@ export default function SmartRecommendationsPage() {
                           <strong>Recommended Action:</strong> {suggestion.action}
                         </p>
                       </div>
-                      <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 ml-4">
+                      <Button onClick={() => suggestion.subject === 'General' ? navigate('/curriculum') : navigate(`/learn/${suggestion.grade}/${encodeURIComponent(suggestion.subject)}/${encodeURIComponent(suggestion.title)}`)} size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 ml-4">
                         Start Learning
                       </Button>
                     </div>
                   </div>
                 ))}
+                {!academicSuggestions.length && <div className="rounded-xl border border-dashed p-6 text-center"><p className="font-bold">No scored focus areas yet</p><p className="mt-1 text-sm text-slate-500">Complete an available objective knowledge check to get progress-based recommendations. Reflection-only study sessions are not treated as test scores.</p><Button onClick={() => navigate('/curriculum')} variant="outline" className="mt-4">Browse curriculum</Button></div>}
               </div>
             </CardContent>
           </Card>
@@ -193,7 +183,7 @@ export default function SmartRecommendationsPage() {
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-gray-600 mb-4">{skill.description}</p>
-                      <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
+                      <Button onClick={() => navigate(`/courses/${skill.id}`)} className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
                         Explore Course
                       </Button>
                     </CardContent>
@@ -220,7 +210,7 @@ export default function SmartRecommendationsPage() {
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-gray-600 mb-4">{skill.description}</p>
-                      <Button variant="outline" className="w-full border-purple-300 hover:bg-purple-50">
+                      <Button onClick={() => navigate(`/courses/${skill.id}`)} variant="outline" className="w-full border-purple-300 hover:bg-purple-50">
                         Explore Course
                       </Button>
                     </CardContent>

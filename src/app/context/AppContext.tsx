@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { setLearningProgressScope } from '../services/learningProgress';
 
 // User Profile Interface
 export interface UserProfile {
@@ -8,6 +9,19 @@ export interface UserProfile {
   role: 'student' | 'teacher';
   avatar?: string;
   createdAt: string;
+}
+
+export interface LearnerProfile {
+  grade: number;
+  board: 'CBSE' | 'Tamil Nadu' | 'ICSE' | 'State board';
+  academicYear: string;
+  medium: string;
+  firstLanguage: string;
+  additionalLanguages: string[];
+  stream?: 'Science' | 'Commerce' | 'Humanities' | 'Vocational' | 'Custom';
+  goals: string[];
+  examDate?: string;
+  setupComplete: boolean;
 }
 
 // User Preferences Interface
@@ -34,6 +48,8 @@ export interface UserPreferences {
   autoSaveNotes: boolean;
   offlineMode: boolean;
   animationsEnabled: boolean;
+  highContrast: boolean;
+  dyslexiaFriendlyFont: boolean;
 }
 
 // Plan Interface
@@ -50,6 +66,7 @@ interface AppContextType {
   language: string;
   setLanguage: (value: string) => void;
   isAuthenticated: boolean;
+  isHydrated: boolean;
   setIsAuthenticated: (value: boolean) => void;
   userRole: 'student' | 'teacher' | null;
   setUserRole: (role: 'student' | 'teacher' | null) => void;
@@ -57,6 +74,8 @@ interface AppContextType {
   setSelectedSubjects: (subjects: string[]) => void;
   selectedSkills: string[];
   setSelectedSkills: (skills: string[]) => void;
+  learnerProfile: LearnerProfile | null;
+  setLearnerProfile: (profile: LearnerProfile | null) => void;
   
   // New: User Profile & Customization
   userProfile: UserProfile | null;
@@ -89,6 +108,8 @@ const defaultPreferences: UserPreferences = {
   autoSaveNotes: true,
   offlineMode: false,
   animationsEnabled: true,
+  highContrast: false,
+  dyslexiaFriendlyFont: false,
 };
 
 const defaultPlan: UserPlan = {
@@ -103,26 +124,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isOnline, setIsOnline] = useState(true);
   const [language, setLanguage] = useState('English');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [userRole, setUserRole] = useState<'student' | 'teacher' | null>(null);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [learnerProfile, setLearnerProfile] = useState<LearnerProfile | null>(null);
   
   // New state for user customization
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
+  const setUserProfile = (profile: UserProfile | null) => { setLearningProgressScope(profile?.id ?? null); setUserProfileState(profile); };
   const [userPreferences, setUserPreferences] = useState<UserPreferences>(defaultPreferences);
   const [userPlan, setUserPlan] = useState<UserPlan>(defaultPlan);
 
   // Load from offline storage on mount
   useEffect(() => {
     loadFromOfflineStorage();
+    setIsHydrated(true);
   }, []);
+
+  useEffect(() => { setLearningProgressScope(userProfile?.id ?? null); }, [userProfile?.id]);
 
   // Save to offline storage whenever important state changes
   useEffect(() => {
     if (isAuthenticated && userProfile) {
       saveToOfflineStorage();
     }
-  }, [isAuthenticated, userProfile, userPreferences, userPlan, selectedSubjects, selectedSkills, language]);
+  }, [isAuthenticated, userProfile, userPreferences, userPlan, selectedSubjects, selectedSkills, learnerProfile, language]);
 
   const saveToOfflineStorage = () => {
     try {
@@ -132,6 +159,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         userPlan,
         selectedSubjects,
         selectedSkills,
+        learnerProfile,
         language,
         isAuthenticated,
         userRole,
@@ -149,11 +177,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const offlineDataStr = localStorage.getItem('eduflow_user_data');
       if (offlineDataStr) {
         const offlineData = JSON.parse(offlineDataStr);
+        const lastActive = Date.parse(offlineData.lastSyncedAt || '');
+        const expired = !Number.isFinite(lastActive) || Date.now() - lastActive > 12 * 60 * 60 * 1000;
+        if (expired && offlineData.isAuthenticated) {
+          localStorage.removeItem('eduflow_user_data');
+          setIsAuthenticated(false);
+          setUserRole(null);
+          return;
+        }
         setUserProfile(offlineData.userProfile || null);
-        setUserPreferences(offlineData.userPreferences || defaultPreferences);
+        setUserPreferences({ ...defaultPreferences, ...(offlineData.userPreferences || {}) });
         setUserPlan(offlineData.userPlan || defaultPlan);
         setSelectedSubjects(offlineData.selectedSubjects || []);
         setSelectedSkills(offlineData.selectedSkills || []);
+        setLearnerProfile(offlineData.learnerProfile || null);
         setLanguage(offlineData.language || 'English');
         setIsAuthenticated(offlineData.isAuthenticated || false);
         setUserRole(offlineData.userRole || null);
@@ -172,6 +209,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setUserPlan(defaultPlan);
       setSelectedSubjects([]);
       setSelectedSkills([]);
+      setLearnerProfile(null);
       setIsAuthenticated(false);
       setUserRole(null);
     } catch (error) {
@@ -185,6 +223,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ...preferences,
     }));
   };
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = userPreferences.theme === 'auto' ? (prefersDark ? 'dark' : 'light') : userPreferences.theme;
+    root.dataset.fontSize = userPreferences.fontSize;
+    root.dataset.density = userPreferences.layoutDensity;
+    root.classList.toggle('reduce-motion', !userPreferences.animationsEnabled);
+    root.classList.toggle('high-contrast', userPreferences.highContrast);
+    root.classList.toggle('dyslexia-font', userPreferences.dyslexiaFriendlyFont);
+    root.style.setProperty('--user-accent', userPreferences.accentColor);
+  }, [userPreferences]);
 
   useEffect(() => {
     // Listen for online/offline events
@@ -208,6 +258,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         language,
         setLanguage,
         isAuthenticated,
+        isHydrated,
         setIsAuthenticated,
         userRole,
         setUserRole,
@@ -215,6 +266,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setSelectedSubjects,
         selectedSkills,
         setSelectedSkills,
+        learnerProfile,
+        setLearnerProfile,
         userProfile,
         setUserProfile,
         userPreferences,

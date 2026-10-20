@@ -29,7 +29,7 @@ import {
 import Navigation from '../components/Navigation';
 
 export default function PlanManagementPage() {
-  const { userPlan, setUserPlan, userProfile } = useApp();
+  const { userPlan, userProfile } = useApp();
   const [selectedPlan, setSelectedPlan] = useState(userPlan.type);
 
   const plans = [
@@ -116,23 +116,8 @@ export default function PlanManagementPage() {
     },
   ];
 
-  const handleUpgrade = (planType: 'free' | 'pro' | 'enterprise') => {
-    if (planType === 'enterprise') {
-      toast.info('Contact Sales', {
-        description: 'Please reach out to our sales team for Enterprise pricing.',
-      });
-      return;
-    }
-
-    setUserPlan({
-      type: planType,
-      startDate: new Date().toISOString(),
-      features: plans.find((p) => p.type === planType)?.features.filter((f) => f.included).map((f) => f.text) || [],
-    });
-
-    toast.success(`Upgraded to ${planType === 'pro' ? 'Pro Learner' : 'Free Explorer'}!`, {
-      description: 'Your plan has been updated successfully.',
-    });
+  const handleUpgrade = (_planType: 'free' | 'pro' | 'enterprise') => {
+    toast.info('Billing is not connected', { description: 'This is a product preview. No payment was taken and your plan or feature access was not changed.' });
   };
 
   const currentPlan = plans.find((p) => p.type === userPlan.type);
@@ -141,7 +126,8 @@ export default function PlanManagementPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 pt-24">
+      <div className="lg:ml-64">
+        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 pt-20 lg:pt-8">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-4">
@@ -151,7 +137,7 @@ export default function PlanManagementPage() {
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Choose Your Learning Path</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Select the perfect plan for your learning journey. Upgrade anytime as you grow.
+            Preview the proposed plans. Billing, subscriptions, feature enforcement, and sales contact are not connected in this prototype; displayed prices are illustrative only.
           </p>
         </div>
 
@@ -162,7 +148,7 @@ export default function PlanManagementPage() {
             <AlertTitle className="text-purple-900 font-semibold">Current Plan</AlertTitle>
             <AlertDescription className="text-purple-800">
               You are currently on the <strong>{currentPlan?.name}</strong> plan.{' '}
-              {userPlan.type !== 'enterprise' && 'Upgrade to unlock more features!'}
+              Plan status is a local preview only; payment and feature access are not connected.
             </AlertDescription>
           </Alert>
         )}
@@ -395,6 +381,7 @@ export default function PlanManagementPage() {
             <Users className="w-4 h-4 mr-2" />
             Talk to Sales
           </Button>
+        </div>
         </div>
       </div>
     </div>
