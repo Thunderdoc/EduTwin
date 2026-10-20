@@ -15,6 +15,10 @@ const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
 const SubjectSelectionPage = lazy(() => import('./pages/SubjectSelectionPage'));
 const CurriculumLibraryPage = lazy(() => import('./pages/CurriculumLibraryPage'));
 const LessonPlayerPage = lazy(() => import('./pages/LessonPlayerPage'));
+const ReviewQueuePage = lazy(() => import('./pages/ReviewQueuePage'));
+const ExamPlannerPage = lazy(() => import('./pages/ExamPlannerPage'));
+const AssessmentHubPage = lazy(() => import('./pages/AssessmentHubPage'));
+const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
 
 // Personalization & Autonomous Learning Pages
 const LearnerSetupPage = lazy(() => import('./pages/LearnerSetupPage'));
@@ -135,6 +139,22 @@ export const router = createBrowserRouter(
     {
       path: '/learn/:grade/:subject/:topic',
       Component: studentPage(LessonPlayerPage),
+    },
+    {
+      path: '/reviews',
+      Component: studentPage(ReviewQueuePage),
+    },
+    {
+      path: '/exam-planner',
+      Component: studentPage(ExamPlannerPage),
+    },
+    {
+      path: '/assessments',
+      Component: studentPage(AssessmentHubPage),
+    },
+    {
+      path: '/portfolio',
+      Component: studentPage(PortfolioPage),
     },
     // Personalization & Autonomous Learning Pages
     {

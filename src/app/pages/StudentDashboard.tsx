@@ -31,25 +31,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { useState, useEffect } from 'react';
 import { curriculumForGrade } from '../lib/schoolCurriculum';
-import { getLessonProgress, progressSummary } from '../services/learningProgress';
-
-const learningProgressData = [
-  { day: 'Mon', score: 65, id: 'mon' },
-  { day: 'Tue', score: 72, id: 'tue' },
-  { day: 'Wed', score: 68, id: 'wed' },
-  { day: 'Thu', score: 78, id: 'thu' },
-  { day: 'Fri', score: 85, id: 'fri' },
-  { day: 'Sat', score: 82, id: 'sat' },
-  { day: 'Sun', score: 88, id: 'sun' },
-];
-
-const cognitiveData = [
-  { subject: 'Memory', score: 85, id: 'memory' },
-  { subject: 'Attention', score: 78, id: 'attention' },
-  { subject: 'Confidence', score: 92, id: 'confidence' },
-  { subject: 'Speed', score: 74, id: 'speed' },
-  { subject: 'Comprehension', score: 88, id: 'comprehension' },
-];
+import { dailyStudyMinutes, getLessonProgress, learningStreak, progressSummary, readProgress, weakestTopics } from '../services/learningProgress';
 
 export default function StudentDashboard() {
   const { isOnline, language, userProfile, userPreferences, learnerProfile, selectedSubjects } = useApp();
@@ -57,7 +39,7 @@ export default function StudentDashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 60_000);
     return () => clearInterval(timer);
   }, []);
 
@@ -75,21 +57,13 @@ export default function StudentDashboard() {
   const totalMinutes = todaysPlan.reduce((sum, t) => sum + t.duration, 0);
   const completedMinutes = todaysPlan.filter(t => t.completed).reduce((sum, t) => sum + t.duration, 0);
 
-  // Streak data
-  const streakDays = 12;
-  const longestStreak = 28;
+  const streak = learningStreak();
+  const streakDays = streak.current;
+  const longestStreak = streak.longest;
 
-  // Weak areas
-  const weakAreas = [
-    { topic: 'Thermodynamics', score: 58, recommendation: '20 min revision suggested' },
-    { topic: 'Organic Chemistry', score: 62, recommendation: 'Watch video tutorial' },
-  ];
+  const weakAreas = weakestTopics(learnerProfile?.grade, 2).map((item) => ({ id:item.id, grade:item.grade, subject:item.subject, topic: item.topic, score: item.mastery, recommendation: `Review ${item.subject} and retry the knowledge check` }));
 
-  // Recommended topics
-  const recommendations = [
-    { title: 'Advanced Calculus', reason: 'Based on your strong algebra performance', icon: '📈' },
-    { title: 'Quantum Physics', reason: 'Next in your learning path', icon: '⚛️' },
-  ];
+  const recommendations = weakestTopics(learnerProfile?.grade, 2).map((item) => ({ id:item.id, grade:item.grade, subject:item.subject, title: item.topic, reason: `${item.mastery}% mastery in ${item.subject}`, icon: '🧠' }));
 
   // Get greeting
   const getGreeting = () => {
@@ -102,8 +76,12 @@ export default function StudentDashboard() {
   const learningSummary = progressSummary(learnerProfile?.grade);
   const overallProgress = learningSummary.averageMastery;
 
-  const riskLevel = overallProgress === 0 || overallProgress >= 70 ? 'Low' : overallProgress >= 45 ? 'Medium' : 'High';
-  const riskColor = riskLevel === 'Low' ? 'bg-green-500' : riskLevel === 'Medium' ? 'bg-yellow-500' : 'bg-red-500';
+  const riskLevel = learningSummary.assessedLessons === 0 ? 'Not enough data' : overallProgress >= 80 ? 'Strong' : overallProgress >= 60 ? 'Building' : 'Needs practice';
+  const riskColor = riskLevel === 'Strong' ? 'bg-green-600' : riskLevel === 'Building' ? 'bg-yellow-600' : riskLevel === 'Not enough data' ? 'bg-slate-500' : 'bg-orange-600';
+  const weeklyActivity = dailyStudyMinutes(new Date(), 7, learnerProfile?.grade);
+  const scoredRecords = readProgress().filter((item) => item.total > 0 && (learnerProfile?.grade === undefined || item.grade === learnerProfile.grade));
+  const subjectEvidence = Object.values(scoredRecords.reduce<Record<string,{subject:string;score:number;count:number}>>((result,item)=>{const row=result[item.subject]||{subject:item.subject,score:0,count:0};row.score+=item.mastery;row.count++;result[item.subject]=row;return result},{})).map((item)=>({subject:item.subject,score:Math.round(item.score/item.count)}));
+  const inProgressCount = readProgress().filter((item)=>item.total===0&&(learnerProfile?.grade===undefined||item.grade===learnerProfile.grade)).length;
 
   return (
     <>
@@ -389,18 +367,18 @@ export default function StudentDashboard() {
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                        {overallProgress}%
+                        {learningSummary.assessedLessons ? `${overallProgress}%` : '—'}
                       </span>
-                      <span className="text-xs text-gray-500">Complete</span>
+                      <span className="text-xs text-gray-500">Assessed mastery</span>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3 mt-4">
                     <div className="text-center p-2 bg-purple-50 rounded-lg">
-                      <p className="text-lg font-bold text-purple-600">12</p>
+                      <p className="text-lg font-bold text-purple-600">{learningSummary.mastered}</p>
                       <p className="text-xs text-gray-600">Mastered</p>
                     </div>
                     <div className="text-center p-2 bg-blue-50 rounded-lg">
-                      <p className="text-lg font-bold text-blue-600">8</p>
+                      <p className="text-lg font-bold text-blue-600">{inProgressCount}</p>
                       <p className="text-xs text-gray-600">In Progress</p>
                     </div>
                   </div>
@@ -422,7 +400,7 @@ export default function StudentDashboard() {
                 <Button
                   variant="outline"
                   className="h-auto py-4 flex flex-col items-center gap-2 hover:bg-purple-50 hover:border-purple-300"
-                  onClick={() => navigate('/adaptive-learning')}
+                  onClick={() => navigate('/curriculum')}
                 >
                   <Play className="w-6 h-6 text-purple-600" />
                   <span className="text-sm font-semibold">Continue Learning</span>
@@ -430,7 +408,7 @@ export default function StudentDashboard() {
                 <Button
                   variant="outline"
                   className="h-auto py-4 flex flex-col items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
-                  onClick={() => navigate('/ai-tools/quiz-generator')}
+                  onClick={() => navigate('/assessments')}
                 >
                   <Target className="w-6 h-6 text-blue-600" />
                   <span className="text-sm font-semibold">Take Quiz</span>
@@ -478,12 +456,14 @@ export default function StudentDashboard() {
                       <p className="text-sm text-gray-600 mb-2">{area.recommendation}</p>
                       <Button
                         size="sm"
+                        onClick={() => navigate(`/learn/${area.grade}/${encodeURIComponent(area.subject)}/${encodeURIComponent(area.topic)}`)}
                         className="w-full bg-orange-500 hover:bg-orange-600"
                       >
                         Start Revision
                       </Button>
                     </div>
                   ))}
+                  {!weakAreas.length && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No scored weak areas yet. Complete an objective question set to personalize revision.</p>}
                 </div>
               </CardContent>
             </Card>
@@ -510,12 +490,13 @@ export default function StudentDashboard() {
                       <Button
                         size="sm"
                         className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                        onClick={() => navigate('/subjects')}
+                        onClick={() => navigate(`/learn/${rec.grade}/${encodeURIComponent(rec.subject)}/${encodeURIComponent(rec.title)}`)}
                       >
                         Explore <ArrowRight className="w-4 h-4 ml-1" />
                       </Button>
                     </div>
                   ))}
+                  {!recommendations.length && <Button variant="outline" className="w-full" onClick={() => navigate('/curriculum')}>Browse your class curriculum</Button>}
                 </div>
               </CardContent>
             </Card>
@@ -535,9 +516,9 @@ export default function StudentDashboard() {
                 <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mb-4 shadow-xl">
                   <Brain className="w-16 h-16 text-purple-600" />
                 </div>
-                <h3 className="text-2xl font-bold mb-2">Alex's AI Twin</h3>
+                <h3 className="text-2xl font-bold mb-2">{userProfile?.name || 'Learner'}'s learning profile</h3>
                 <p className="text-purple-100 text-center text-sm mb-4">
-                  Your personalized learning companion analyzing your progress 24/7
+                  A snapshot based on your saved lesson activity and scored checks on this device.
                 </p>
                 <Button 
                   variant="secondary" 
@@ -559,18 +540,18 @@ export default function StudentDashboard() {
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
                     <Target className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-blue-600">85%</p>
-                    <p className="text-sm text-gray-600">Overall Score</p>
+                    <p className="text-2xl font-bold text-blue-600">{learningSummary.assessedLessons ? `${overallProgress}%` : '—'}</p>
+                    <p className="text-sm text-gray-600">Assessed Mastery</p>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
                     <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-green-600">12</p>
+                    <p className="text-2xl font-bold text-green-600">{learningSummary.mastered}</p>
                     <p className="text-sm text-gray-600">Topics Mastered</p>
                   </div>
                   <div className="text-center p-4 bg-purple-50 rounded-lg">
                     <Activity className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-purple-600">24h</p>
-                    <p className="text-sm text-gray-600">This Week</p>
+                    <p className="text-2xl font-bold text-purple-600">{weeklyActivity.reduce((sum,day)=>sum+day.minutes,0)}m</p>
+                    <p className="text-sm text-gray-600">Study time, 7 days</p>
                   </div>
                 </div>
 
@@ -579,8 +560,8 @@ export default function StudentDashboard() {
                   <div className="flex items-center gap-3">
                     <AlertTriangle className="w-5 h-5 text-gray-600" />
                     <div>
-                      <p className="font-semibold">Risk Level</p>
-                      <p className="text-sm text-gray-600">Performance indicator</p>
+                      <p className="font-semibold">Learning signal</p>
+                      <p className="text-sm text-gray-600">Based on objective checks only</p>
                     </div>
                   </div>
                   <Badge className={`${riskColor} text-white px-4 py-1`}>
@@ -597,13 +578,13 @@ export default function StudentDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-blue-600" />
-                  Learning Progress (Last 7 Days)
+                  Study Minutes (Last 7 Days)
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250} key="learning-progress-chart">
                   <LineChart
-                    data={learningProgressData}
+                    data={weeklyActivity}
                     margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
                     id="learning-progress-line-chart"
                   >
@@ -614,7 +595,7 @@ export default function StudentDashboard() {
                     <Line
                       key="line-1"
                       type="monotone"
-                      dataKey="score"
+                      dataKey="minutes"
                       stroke="#8b5cf6"
                       strokeWidth={3}
                       dot={{ r: 4 }}
@@ -632,45 +613,11 @@ export default function StudentDashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="w-5 h-5 text-purple-600" />
-                  Cognitive Performance
+                  Scored Mastery by Subject
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={250} key="cognitive-radar-chart">
-                  <RadarChart
-                    data={cognitiveData}
-                    margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                    id="cognitive-radar-chart"
-                  >
-                    <PolarGrid stroke="#e5e7eb" key="polar-grid-1" />
-                    <PolarAngleAxis dataKey="subject" stroke="#6b7280" key="polar-angle-1" />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} key="polar-radius-1" />
-                    <Radar
-                      key="radar-1"
-                      name="Score"
-                      dataKey="score"
-                      stroke="#8b5cf6"
-                      fill="#8b5cf6"
-                      fillOpacity={0.6}
-                      isAnimationActive={false}
-                      animationDuration={0}
-                    />
-                    <Tooltip
-                      key="tooltip-2"
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-white p-2 border border-gray-200 rounded shadow-lg">
-                              <p className="text-sm font-semibold">{payload[0].payload.subject}</p>
-                              <p className="text-sm text-purple-600">{payload[0].value}%</p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
+                {subjectEvidence.length ? <div className="space-y-4 py-3">{subjectEvidence.map((item) => <div key={item.subject}><div className="mb-1 flex justify-between text-sm"><span className="font-semibold">{item.subject}</span><span className="text-slate-500">{item.score}%</span></div><Progress value={item.score} /></div>)}</div> : <div className="grid h-[250px] place-items-center text-center text-sm text-slate-500">Subject mastery will appear after you complete an objective lesson check. Reflection-only sessions are not scored.</div>}
               </CardContent>
             </Card>
           </div>
@@ -683,46 +630,8 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold text-green-600 mb-3 flex items-center gap-2">
-                    <Award className="w-5 h-5" />
-                    Strengths
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                      <span>Problem Solving</span>
-                      <Progress value={92} className="w-24 h-2" />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                      <span>Logical Thinking</span>
-                      <Progress value={88} className="w-24 h-2" />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                      <span>Quick Learning</span>
-                      <Progress value={85} className="w-24 h-2" />
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-orange-600 mb-3 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5" />
-                    Areas to Improve
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                      <span>Advanced Calculus</span>
-                      <Progress value={62} className="w-24 h-2" />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                      <span>Memory Retention</span>
-                      <Progress value={68} className="w-24 h-2" />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-                      <span>Essay Writing</span>
-                      <Progress value={58} className="w-24 h-2" />
-                    </div>
-                  </div>
-                </div>
+                <div><h4 className="font-semibold text-green-600 mb-3 flex items-center gap-2"><Award className="w-5 h-5"/>Mastered Topics</h4><div className="space-y-2">{readProgress().filter((item)=>item.total>0&&item.mastery>=85&&(learnerProfile?.grade===undefined||item.grade===learnerProfile.grade)).slice(0,4).map((item)=><div key={item.id} className="flex items-center justify-between gap-3 rounded-lg bg-green-50 p-3"><span className="truncate">{item.topic}</span><Progress value={item.mastery} className="w-24 h-2"/></div>)}{!readProgress().some((item)=>item.total>0&&item.mastery>=85&&(learnerProfile?.grade===undefined||item.grade===learnerProfile.grade))&&<p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">Complete objective checks to identify mastered topics.</p>}</div></div>
+                <div><h4 className="font-semibold text-orange-600 mb-3 flex items-center gap-2"><AlertTriangle className="w-5 h-5"/>Topics to Practise</h4><div className="space-y-2">{weakAreas.map((item)=><div key={item.topic} className="flex items-center justify-between gap-3 rounded-lg bg-orange-50 p-3"><span className="truncate">{item.topic}</span><Progress value={item.score} className="w-24 h-2"/></div>)}{!weakAreas.length&&<p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-500">Scored checks will reveal topics that need more practice.</p>}</div></div>
               </div>
             </CardContent>
           </Card>
@@ -740,7 +649,7 @@ export default function StudentDashboard() {
             <Button 
               size="lg" 
               className="h-24 text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-              onClick={() => navigate('/adaptive-learning')}
+              onClick={() => navigate('/curriculum')}
             >
               <BookOpen className="w-6 h-6 mr-3" />
               Start Learning

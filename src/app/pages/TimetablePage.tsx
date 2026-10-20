@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useApp } from '../context/AppContext';
+import { curriculumForGrade } from '../lib/schoolCurriculum';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -9,60 +11,37 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useNavigate } from 'react-router';
 import { Navigation } from '../components/Navigation';
-import { ArrowLeft, Calendar, Clock, Bell, BookOpen, Video, Edit, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Bell, BookOpen, Edit, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
 const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const initialTimetableData = {
-  Monday: [
-    { time: '09:00 AM', title: 'Mathematics', type: 'Class', duration: '1h', color: 'blue' },
-    { time: '11:00 AM', title: 'Physics', type: 'Class', duration: '1h', color: 'purple' },
-    { time: '02:00 PM', title: 'Python Study', type: 'Study Session', duration: '2h', color: 'green' },
-  ],
-  Tuesday: [
-    { time: '10:00 AM', title: 'Chemistry', type: 'Class', duration: '1h', color: 'orange' },
-    { time: '01:00 PM', title: 'English', type: 'Class', duration: '1h', color: 'pink' },
-    { time: '03:00 PM', title: 'Calculus Review', type: 'Study Session', duration: '1.5h', color: 'green' },
-  ],
-  Wednesday: [
-    { time: '09:00 AM', title: 'Biology', type: 'Class', duration: '1h', color: 'blue' },
-    { time: '11:30 AM', title: 'Computer Science', type: 'Class', duration: '1.5h', color: 'purple' },
-    { time: '03:00 PM', title: 'Active Recall Practice', type: 'Study Session', duration: '1h', color: 'green' },
-  ],
-  Thursday: [
-    { time: '10:00 AM', title: 'Mathematics', type: 'Class', duration: '1h', color: 'blue' },
-    { time: '02:00 PM', title: 'Physics Lab', type: 'Lab', duration: '2h', color: 'purple' },
-    { time: '05:00 PM', title: 'Web Development', type: 'Study Session', duration: '1h', color: 'green' },
-  ],
-  Friday: [
-    { time: '09:00 AM', title: 'English Literature', type: 'Class', duration: '1h', color: 'pink' },
-    { time: '11:00 AM', title: 'Chemistry', type: 'Class', duration: '1h', color: 'orange' },
-    { time: '03:00 PM', title: 'Weekly Review', type: 'Study Session', duration: '2h', color: 'green' },
-  ],
-  Saturday: [
-    { time: '10:00 AM', title: 'AI Tutor Session', type: 'Online Session', duration: '1h', color: 'purple' },
-    { time: '02:00 PM', title: 'Project Work', type: 'Study Session', duration: '3h', color: 'green' },
-  ],
-  Sunday: [
-    { time: '11:00 AM', title: 'Spaced Repetition', type: 'Study Session', duration: '1h', color: 'green' },
-    { time: '04:00 PM', title: 'Plan Next Week', type: 'Planning', duration: '30m', color: 'blue' },
-  ],
-};
-
-const upcomingReminders = [
-  { time: '15 minutes', title: 'Mathematics Class', status: 'upcoming' },
-  { time: '1 hour', title: 'Python Study Session', status: 'upcoming' },
-  { time: '3 hours', title: 'Physics Lab', status: 'later' },
-];
+type ScheduleEvent = { time: string; title: string; type: string; duration: string; color: string };
+type WeeklyTimetable = Record<string, ScheduleEvent[]>;
+const TIMETABLE_KEY = 'eduflow_timetable_v2';
+function buildStudyPlan(subjects: string[], grade: number, dailyGoalMinutes: number): WeeklyTimetable {
+  const curriculum = curriculumForGrade(grade);
+  const selected = subjects.length ? subjects : Object.keys(curriculum.subjects);
+  return Object.fromEntries(weekDays.map((day, index) => {
+    const subject = selected[index % Math.max(1, selected.length)] || 'Study';
+    const topics = curriculum.subjects[subject] || ['Review a topic from your class materials'];
+    const event: ScheduleEvent = { time: '05:00 PM', title: `${subject} · ${topics[index % topics.length]}`, type: 'Suggested Study Session', duration: `${dailyGoalMinutes} min`, color: 'green' };
+    return [day, index < 5 ? [event] : []];
+  }));
+}
 
 export default function TimetablePage() {
   const navigate = useNavigate();
+  const { learnerProfile, selectedSubjects, userPreferences, userProfile } = useApp();
+  const learnerGrade = learnerProfile?.grade ?? 6;
+  const scheduleKey = `${TIMETABLE_KEY}:${encodeURIComponent(userProfile?.id || 'anonymous')}`;
+  const reminderKey = `eduflow_reminder_preferences:${encodeURIComponent(userProfile?.id || 'anonymous')}`;
   const [selectedDay, setSelectedDay] = useState('Monday');
-  const [reminderEnabled, setReminderEnabled] = useState(true);
-  const [reminderTime, setReminderTime] = useState(15);
-  const [timetableData, setTimetableData] = useState(initialTimetableData);
-  const [showNotification, setShowNotification] = useState(true);
+  const [reminderEnabled, setReminderEnabled] = useState(() => localStorage.getItem(`${reminderKey}:enabled`) !== 'false');
+  const [reminderTime, setReminderTime] = useState(() => Number(localStorage.getItem(`${reminderKey}:lead`) || 15));
+  const [timetableData, setTimetableData] = useState<WeeklyTimetable>(() => { try { const saved = localStorage.getItem(scheduleKey); return saved ? { ...buildStudyPlan(selectedSubjects, learnerGrade, userPreferences.dailyGoalMinutes), ...JSON.parse(saved) } : buildStudyPlan(selectedSubjects, learnerGrade, userPreferences.dailyGoalMinutes); } catch { return buildStudyPlan(selectedSubjects, learnerGrade, userPreferences.dailyGoalMinutes); } });
+  useEffect(() => { localStorage.setItem(scheduleKey, JSON.stringify(timetableData)); }, [scheduleKey, timetableData]);
+  useEffect(() => { localStorage.setItem(`${reminderKey}:enabled`, String(reminderEnabled)); localStorage.setItem(`${reminderKey}:lead`, String(reminderTime)); }, [reminderKey, reminderEnabled, reminderTime]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{day: string; index: number; event: any} | null>(null);
@@ -151,10 +130,10 @@ export default function TimetablePage() {
     });
   };
 
-  const handleDismissNotification = () => {
-    setShowNotification(false);
-    toast.success('Notification dismissed');
-  };
+  const allEvents = Object.values(timetableData).flat();
+  const classCount = allEvents.filter((event) => event.type === 'Class').length;
+  const studyMinutes = allEvents.filter((event) => event.type.toLowerCase().includes('study')).reduce((sum, event) => { const parsed = Number.parseFloat(event.duration); return sum + (Number.isFinite(parsed) ? parsed * (event.duration.toLowerCase().includes('h') ? 60 : 1) : 0); }, 0);
+  const onlineCount = allEvents.filter((event) => event.type.toLowerCase().includes('online')).length;
 
   const getColorClasses = (color: string) => {
     const colors: Record<string, string> = {
@@ -179,9 +158,9 @@ export default function TimetablePage() {
               Back to Dashboard
             </Button>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Timetable & Reminders
+              Timetable & Study Plan
             </h1>
-            <p className="text-gray-600 mt-2">Manage your schedule and stay organized</p>
+            <p className="text-gray-600 mt-2">A starter schedule based on your selected class, subjects, and daily study goal.</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -216,7 +195,7 @@ export default function TimetablePage() {
                     <Calendar className="w-5 h-5 text-blue-600" />
                     {selectedDay}'s Schedule
                   </CardTitle>
-                  <CardDescription>Your classes and study sessions</CardDescription>
+                  <CardDescription>Suggested class-aware study sessions, saved on this device. Edit times around your real school schedule.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -282,19 +261,7 @@ export default function TimetablePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {upcomingReminders.map((reminder, index) => (
-                      <div key={index} className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center flex-shrink-0">
-                            <Bell className="w-5 h-5 text-purple-600" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm text-purple-100">In {reminder.time}</p>
-                            <p className="font-semibold">{reminder.title}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                    <p className="rounded-lg bg-white/15 p-4 text-sm leading-6">Your timetable is saved on this device. This prototype does not send background notifications; use your device calendar for reliable alerts.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -309,7 +276,7 @@ export default function TimetablePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="reminder-toggle">Enable Reminders</Label>
+                    <Label htmlFor="reminder-toggle">Reminder preference (local only)</Label>
                     <Switch
                       id="reminder-toggle"
                       checked={reminderEnabled}
@@ -318,7 +285,7 @@ export default function TimetablePage() {
                   </div>
                   {reminderEnabled && (
                     <div className="space-y-2">
-                      <Label>Remind me before:</Label>
+                      <Label>Preferred lead time (not delivered as a notification):</Label>
                       <div className="grid grid-cols-2 gap-2">
                         {[5, 10, 15, 30].map((mins) => (
                           <Button
@@ -344,7 +311,7 @@ export default function TimetablePage() {
               {/* Quick Stats */}
               <Card className="shadow-lg border-0">
                 <CardHeader>
-                  <CardTitle>This Week</CardTitle>
+                  <CardTitle>Saved Schedule Totals</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -353,21 +320,21 @@ export default function TimetablePage() {
                         <BookOpen className="w-5 h-5 text-blue-600" />
                         <span className="font-medium">Classes</span>
                       </div>
-                      <span className="text-xl font-bold text-blue-600">12</span>
+                      <span className="text-xl font-bold text-blue-600">{classCount}</span>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <Clock className="w-5 h-5 text-green-600" />
                         <span className="font-medium">Study Hours</span>
                       </div>
-                      <span className="text-xl font-bold text-green-600">18</span>
+                      <span className="text-xl font-bold text-green-600">{Math.round(studyMinutes / 60 * 10) / 10}</span>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                       <div className="flex items-center gap-2">
-                        <Video className="w-5 h-5 text-purple-600" />
+                        <Calendar className="w-5 h-5 text-purple-600" />
                         <span className="font-medium">Online Sessions</span>
                       </div>
-                      <span className="text-xl font-bold text-purple-600">3</span>
+                      <span className="text-xl font-bold text-purple-600">{onlineCount}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -375,29 +342,6 @@ export default function TimetablePage() {
             </div>
           </div>
 
-          {/* Notification Card Example */}
-          {showNotification && (
-            <Card className="shadow-lg border-0 mt-6 bg-yellow-50 border-yellow-300">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-white animate-pulse" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-yellow-800">Reminder: Class starts in 15 minutes</p>
-                    <p className="text-sm text-yellow-700">Mathematics - 09:00 AM</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleDismissNotification}
-                  >
-                    Dismiss
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Add Event Dialog */}

@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, BookOpen, Check, CheckCircle2, Clock, Play, RotateCcw, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { Navigation } from '../components/Navigation';
+import { useApp } from '../context/AppContext';
 import { Progress } from '../components/ui/progress';
 import { findSkillCourse } from '../lib/courseCatalog';
 
@@ -10,7 +11,8 @@ export default function CoursePage() {
   const { courseId } = useParams();
   const course = findSkillCourse(courseId);
   const navigate = useNavigate();
-  const storageKey = `eduflow_course_progress_${courseId}`;
+  const { userProfile } = useApp();
+  const storageKey = `eduflow_course_progress_${encodeURIComponent(userProfile?.id || 'anonymous')}_${courseId}`;
   const [completed, setCompleted] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch { return []; } });
   const [activeLesson, setActiveLesson] = useState<string | null>(null);
   const lessons = useMemo(() => course?.modules.flatMap((item) => item.lessons) || [], [course]);

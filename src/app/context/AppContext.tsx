@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { setLearningProgressScope } from '../services/learningProgress';
 
 // User Profile Interface
 export interface UserProfile {
@@ -130,7 +131,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [learnerProfile, setLearnerProfile] = useState<LearnerProfile | null>(null);
   
   // New state for user customization
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
+  const setUserProfile = (profile: UserProfile | null) => { setLearningProgressScope(profile?.id ?? null); setUserProfileState(profile); };
   const [userPreferences, setUserPreferences] = useState<UserPreferences>(defaultPreferences);
   const [userPlan, setUserPlan] = useState<UserPlan>(defaultPlan);
 
@@ -139,6 +141,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     loadFromOfflineStorage();
     setIsHydrated(true);
   }, []);
+
+  useEffect(() => { setLearningProgressScope(userProfile?.id ?? null); }, [userProfile?.id]);
 
   // Save to offline storage whenever important state changes
   useEffect(() => {
