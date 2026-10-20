@@ -12,3 +12,5 @@
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; } }
 .skip-link { position: fixed; left: 1rem; top: -4rem; z-index: 9999; border-radius: .5rem; background: #111827; color: white; padding: .75rem 1rem; }
 .skip-link:focus { top: 1rem; }
+.login-input { width: 100%; min-height: 2.75rem; border: 1px solid #d8dce7; border-radius: .75rem; background: #fff; padding: .65rem .85rem; font-size: .875rem; outline: none; transition: border-color .15s, box-shadow .15s; }
+.login-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.12); }

@@ -2,7 +2,7 @@ export type SchoolBoard = "CBSE" | "Tamil Nadu" | "ICSE" | "State board";
 
 export interface GradeCurriculum {
   grade: number;
-  stage: "foundation" | "primary" | "middle" | "secondary" | "senior";
+  stage: "early" | "foundation" | "primary" | "middle" | "secondary" | "senior";
   subjects: Record<string, string[]>;
 }
 
@@ -15,8 +15,16 @@ const commonPrimary = (grade: number): Record<string, string[]> => ({
   "Art & Wellbeing": ["Visual art and music", "Movement and health", "Social-emotional learning"],
 });
 
-export const gradeCurricula: GradeCurriculum[] = Array.from({ length: 12 }, (_, index) => {
-  const grade = index + 1;
+export const regionalLanguages = ["Tamil", "Hindi", "Telugu", "Malayalam", "Kannada", "Bengali", "Marathi", "Gujarati", "Punjabi", "Urdu", "Odia", "Assamese"] as const;
+
+export const gradeCurricula: GradeCurriculum[] = Array.from({ length: 13 }, (_, grade) => {
+  if (grade === 0) return { grade, stage: "early", subjects: {
+    "Early Literacy": ["Sounds, rhymes and stories", "Picture reading and vocabulary", "Speaking and listening"],
+    "Early Numeracy": ["Counting and matching", "Patterns and sorting", "Shapes, size and position"],
+    "My World": ["Self, family and community", "Plants, animals and weather", "Safety and healthy habits"],
+    "Art, Music & Movement": ["Colour and making", "Songs and rhythm", "Movement, play and coordination"],
+    "Social-Emotional Learning": ["Feelings and expression", "Sharing and friendship", "Curiosity and confidence"],
+  }};
   if (grade <= 5) return { grade, stage: grade <= 2 ? "foundation" : "primary", subjects: commonPrimary(grade) };
   if (grade <= 8) return { grade, stage: "middle", subjects: {
     Mathematics: ["Number systems", "Algebra", "Geometry, mensuration and data"],

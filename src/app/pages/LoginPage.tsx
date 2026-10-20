@@ -1,222 +1,99 @@
-import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router";
-import { motion } from "motion/react";
-import { toast } from "sonner";
-import { useApp, type UserProfile } from "../context/AppContext";
-import { authenticateLocalAccount, createLocalAccount, readAccounts } from "../services/localAuth";
-import {
-  ArrowRight,
-  BrainCircuit,
-  Check,
-  ChevronRight,
-  Eye,
-  EyeOff,
-  Globe2,
-  GraduationCap,
-  KeyRound,
-  Sparkles,
-  UserRound,
-  UsersRound,
-  WifiOff,
-} from "lucide-react";
+import { useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { toast } from 'sonner';
+import { ArrowLeft, ArrowRight, BookOpen, Brain, Check, Eye, EyeOff, Globe2, GraduationCap, KeyRound, Languages, ShieldCheck, Sparkles, UserRound, UsersRound, WifiOff } from 'lucide-react';
+import { useApp, type UserProfile } from '../context/AppContext';
+import { authenticateLocalAccount, createLocalAccount, readAccounts } from '../services/localAuth';
 
-const languages = ["English", "Tamil", "Hindi", "Telugu", "Malayalam"];
-
-const learningSignals = [
-  { label: "Learner model", value: "Adapts to you" },
-  { label: "Review queue", value: "Always in reach" },
-  { label: "Your progress", value: "Private by design" },
-];
+const languages = ['English', 'Tamil', 'Hindi', 'Telugu', 'Malayalam', 'Kannada', 'Bengali', 'Marathi', 'Gujarati', 'Punjabi', 'Urdu', 'Odia', 'Assamese'];
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { setIsAuthenticated, setUserRole, language, setLanguage, setIsOnline, setUserProfile } = useApp();
-  const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
+  const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup');
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const completeLogin = (profile: UserProfile, destination: string) => {
-    setUserProfile(profile);
-    setIsAuthenticated(true);
-    setUserRole(profile.role);
-    toast.success(`Welcome${profile.name ? `, ${profile.name.split(" ")[0]}` : ""}.`);
+    setUserProfile(profile); setIsAuthenticated(true); setUserRole(profile.role);
+    toast.success(`Welcome${profile.name ? `, ${profile.name.split(' ')[0]}` : ''}.`);
     navigate(destination);
   };
 
   const handleLogin = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const email = formData.email.trim().toLowerCase();
-    const existingUser = await authenticateLocalAccount(email, formData.password);
-
-    if (existingUser || (email === "student@eduflow.ai" && formData.password === "demo123")) {
-      completeLogin(existingUser || { id: "demo-student", name: "Demo Student", email: "student@eduflow.ai", role: "student", createdAt: new Date().toISOString() }, "/dashboard");
-      return;
-    }
-
-    toast.error("That sign-in didn’t match our local records.", { description: "Use the demo account or create a new local account." });
+    event.preventDefault(); setIsSubmitting(true);
+    try {
+      const email = formData.email.trim().toLowerCase();
+      const existingUser = await authenticateLocalAccount(email, formData.password);
+      if (existingUser || (email === 'student@eduflow.ai' && formData.password === 'demo123')) {
+        completeLogin(existingUser || { id: 'demo-student', name: 'Demo Student', email: 'student@eduflow.ai', role: 'student', createdAt: new Date().toISOString() }, '/dashboard');
+        return;
+      }
+      toast.error('That sign-in did not match our local records.', { description: 'Use the learner demo or create a new account.' });
+    } finally { setIsSubmitting(false); }
   };
 
   const handleSignup = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!formData.name || !formData.email || !formData.password) {
-      toast.error("Complete each field to create your learning space.");
-      return;
-    }
-    if (!acceptedTerms) {
-      toast.error("Please confirm the privacy and responsible-use notice.");
-      return;
-    }
-
-    const savedUsers = readAccounts();
+    if (!formData.name.trim() || !formData.email.trim() || !formData.password) return void toast.error('Complete each field to create your learning space.');
+    if (!acceptedTerms) return void toast.error('Please confirm the privacy and responsible-use notice.');
     const normalizedEmail = formData.email.trim().toLowerCase();
-    if (savedUsers.some((user) => user.email.toLowerCase() === normalizedEmail)) {
-      toast.error("An account with this email already exists.", { description: "Try signing in instead." });
-      return;
-    }
-
-    const profile: UserProfile = {
-      id: crypto.randomUUID(), name: formData.name.trim(), email: normalizedEmail, role: "student", createdAt: new Date().toISOString(),
-    };
+    if (readAccounts().some((user) => user.email.toLowerCase() === normalizedEmail)) return void toast.error('An account with this email already exists.');
+    setIsSubmitting(true);
     try {
+      const profile: UserProfile = { id: crypto.randomUUID(), name: formData.name.trim(), email: normalizedEmail, role: 'student', createdAt: new Date().toISOString() };
       await createLocalAccount(profile, formData.password);
-      completeLogin(profile, "/onboarding-quiz");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not create this account.");
-    }
+      completeLogin(profile, '/onboarding-quiz');
+    } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not create this account.'); }
+    finally { setIsSubmitting(false); }
   };
 
-  const useDemo = () => {
-    completeLogin(
-      { id: "demo-student", name: "Demo Student", email: "student@eduflow.ai", role: "student", createdAt: new Date().toISOString() },
-      "/dashboard",
-    );
-  };
+  const useDemo = () => completeLogin({ id: 'demo-student', name: 'Demo Student', email: 'student@eduflow.ai', role: 'student', createdAt: new Date().toISOString() }, '/dashboard');
+  const enterOffline = () => { setIsOnline(false); completeLogin({ id: `offline-${Date.now()}`, name: 'Offline Learner', email: 'offline@local', role: 'student', createdAt: new Date().toISOString() }, '/dashboard'); };
+  const enterTeacher = () => completeLogin({ id: 'demo-teacher', name: 'Demo Teacher', email: 'teacher@eduflow.ai', role: 'teacher', createdAt: new Date().toISOString() }, '/teacher');
 
-  const enterOffline = () => {
-    setIsOnline(false);
-    completeLogin(
-      { id: `offline-${Date.now()}`, name: "Offline Learner", email: "offline@local", role: "student", createdAt: new Date().toISOString() },
-      "/dashboard",
-    );
-  };
+  return <main id="main-content" className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-blue-50 px-4 py-6 text-slate-900 sm:px-6 lg:px-10">
+    <div className="mx-auto max-w-7xl">
+      <header className="flex items-center justify-between py-2">
+        <Link to="/" className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-lg"><Brain size={23} /></span><span><strong className="block text-xl tracking-tight">EduFlow</strong><span className="text-xs text-slate-500">Smart learning platform</span></span></Link>
+        <Link to="/" className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-white"><ArrowLeft size={16} />Home</Link>
+      </header>
 
-  const enterTeacher = () => {
-    completeLogin(
-      { id: `teacher-${Date.now()}`, name: "Demo Teacher", email: "teacher@eduflow.ai", role: "teacher", createdAt: new Date().toISOString() },
-      "/teacher",
-    );
-  };
-
-  return (
-    <main className="min-h-screen overflow-hidden bg-[#0b1020] font-[family-name:var(--font-body)] text-slate-950 selection:bg-amber-200">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <motion.div
-          aria-hidden="true"
-          className="absolute -left-24 top-20 h-72 w-72 rounded-full bg-[#6c63ff]/35 blur-3xl"
-          animate={{ x: [0, 70, 0], y: [0, -30, 0], scale: [1, 1.16, 1] }}
-          transition={{ duration: 13, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          aria-hidden="true"
-          className="absolute -right-16 bottom-0 h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl"
-          animate={{ x: [0, -55, 0], y: [0, 35, 0], scale: [1.1, 0.92, 1.1] }}
-          transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.045)_1px,transparent_1px)] bg-[size:44px_44px]" />
-      </div>
-
-      <div className="relative mx-auto grid min-h-screen max-w-[1440px] grid-cols-1 lg:grid-cols-[1.05fr_.95fr]">
-        <section className="hidden px-10 py-10 lg:flex lg:flex-col xl:px-20">
-          <motion.div
-            className="flex items-center gap-3 text-white"
-            initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-          >
-            <div className="grid size-11 place-items-center rounded-[15px] bg-amber-300 text-[#0b1020] shadow-[0_0_0_6px_rgba(251,191,36,.10)]"><BrainCircuit size={23} strokeWidth={2.3} /></div>
-            <div>
-              <p className="font-[family-name:var(--font-display)] text-xl font-extrabold tracking-[-0.04em]">EduFlow</p>
-              <p className="font-[family-name:var(--font-mono)] text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400">Personal learning system</p>
-            </div>
-          </motion.div>
-
-          <div className="my-auto max-w-xl py-14">
-            <motion.p className="font-[family-name:var(--font-mono)] text-xs font-medium uppercase tracking-[0.18em] text-amber-300" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}>Learning, in motion</motion.p>
-            <motion.h1
-              className="mt-5 font-[family-name:var(--font-display)] text-5xl font-extrabold leading-[1.03] tracking-[-0.055em] text-white xl:text-6xl"
-              initial={{ opacity: 0, y: 22 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25, duration: 0.65 }}
-            >
-              A study rhythm that <span className="text-amber-300">keeps up with you.</span>
-            </motion.h1>
-            <motion.p className="mt-6 max-w-md text-lg leading-8 text-slate-300" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.36, duration: 0.55 }}>
-              EduFlow notices what you know, what needs another pass, and what your mind is ready for next.
-            </motion.p>
-
-            <motion.div className="mt-12 border-y border-white/10" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.6 }}>
-              {learningSignals.map((signal, index) => (
-                <div key={signal.label} className="flex items-center justify-between py-4 text-sm" >
-                  <span className="flex items-center gap-3 text-slate-400"><span className="grid size-5 place-items-center rounded-full border border-white/15 font-[family-name:var(--font-mono)] text-[9px] text-amber-300">0{index + 1}</span>{signal.label}</span>
-                  <span className="font-medium text-white">{signal.value}</span>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-
-          <motion.div className="flex items-center gap-2 text-sm text-slate-400" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.72 }}>
-            <span className="relative flex size-2"><span className="absolute inline-flex size-2 animate-ping rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex size-2 rounded-full bg-emerald-400" /></span>
-            Designed to keep learning available — even offline.
-          </motion.div>
+      <div className="grid min-h-[calc(100vh-100px)] gap-8 py-8 lg:grid-cols-[1fr_480px] lg:items-center">
+        <section className="hidden lg:block">
+          <div className="max-w-xl"><span className="inline-flex items-center gap-2 rounded-full border border-purple-200 bg-white px-3 py-1.5 text-xs font-bold text-purple-700 shadow-sm"><Sparkles size={14} />ONE LEARNING SPACE · EVERY CLASS</span><h1 className="mt-6 text-6xl font-black leading-[1.03] tracking-[-.055em] text-slate-900">Your path from first words to <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">future-ready skills.</span></h1><p className="mt-6 text-lg leading-8 text-slate-600">Start at pre-primary or any class through Class 12. Shape your subjects, language, pace, practice, and revision in one connected workspace.</p></div>
+          <div className="mt-10 grid max-w-2xl grid-cols-2 gap-4">{[
+            [GraduationCap, 'Pre-primary to Class 12', 'Class, board and stream-aware paths'],
+            [Languages, '13 interface languages', 'English and 12 Indian regional languages'],
+            [BookOpen, 'Subjects and life skills', 'Academic, creative, digital and career learning'],
+            [ShieldCheck, 'Learner-controlled', 'Local data controls and accessibility settings'],
+          ].map(([Icon, title, text]) => { const FeatureIcon = Icon as typeof GraduationCap; return <article key={title as string} className="rounded-2xl border border-white/80 bg-white/75 p-5 shadow-sm backdrop-blur"><FeatureIcon className="size-5 text-purple-600" /><h2 className="mt-4 font-bold">{title as string}</h2><p className="mt-1 text-sm leading-5 text-slate-500">{text as string}</p></article>; })}</div>
         </section>
 
-        <section className="flex min-h-screen items-center justify-center bg-[#f8f7f2] px-5 py-9 sm:px-8 lg:px-12">
-          <motion.div className="w-full max-w-[430px]" initial={{ opacity: 0, x: 28 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.65, ease: "easeOut" }}>
-            <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-[#5149cb]"><ArrowRight className="size-4 rotate-180" />Back to home</Link>
-            <div className="mb-10 flex items-center justify-between lg:hidden">
-              <div className="flex items-center gap-2.5"><div className="grid size-10 place-items-center rounded-xl bg-[#0b1020] text-amber-300"><BrainCircuit size={21} /></div><span className="font-[family-name:var(--font-display)] text-xl font-extrabold tracking-[-.04em]">EduFlow</span></div>
-              <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[.14em] text-slate-500">v2.1</span>
-            </div>
+        <section className="rounded-3xl border border-white bg-white p-6 shadow-[0_24px_70px_rgba(76,68,160,.16)] sm:p-8">
+          <div className="flex rounded-xl bg-slate-100 p-1" role="tablist" aria-label="Account action"><button type="button" role="tab" aria-selected={isLogin} onClick={() => setIsLogin(true)} className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${isLogin ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500'}`}>Sign in</button><button type="button" role="tab" aria-selected={!isLogin} onClick={() => setIsLogin(false)} className={`flex-1 rounded-lg py-2.5 text-sm font-bold transition ${!isLogin ? 'bg-white text-purple-700 shadow-sm' : 'text-slate-500'}`}>Create account</button></div>
+          <div className="mt-7"><p className="text-xs font-bold uppercase tracking-[.15em] text-purple-600">Your learning space</p><h2 className="mt-2 text-3xl font-black tracking-tight">{isLogin ? 'Welcome back' : 'Build your learning path'}</h2><p className="mt-2 text-sm text-slate-500">{isLogin ? 'Continue from your next best learning step.' : 'Start with your class, language, and goals.'}</p></div>
 
-            <div className="mb-8">
-              <p className="font-[family-name:var(--font-mono)] text-[11px] font-medium uppercase tracking-[.15em] text-[#5d56d8]">Your learning space</p>
-              <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl font-extrabold tracking-[-.055em] text-[#111827]">{isLogin ? "Pick up where you left off." : "Start your learning loop."}</h2>
-              <p className="mt-3 text-[15px] leading-6 text-slate-600">{isLogin ? "Sign in to see today’s next best step." : "Your plan will adapt as you learn."}</p>
-            </div>
+          <form onSubmit={isLogin ? handleLogin : handleSignup} className="mt-7 space-y-4">
+            {!isLogin && <Field label="Learner name" icon={UserRound}><input required autoComplete="name" value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} placeholder="e.g. Asha" className="login-input" /></Field>}
+            <Field label="Email address" icon={UserRound}><input required type="email" autoComplete="email" value={formData.email} onChange={(event) => setFormData({ ...formData, email: event.target.value })} placeholder="you@example.com" className="login-input" /></Field>
+            <Field label="Password" icon={KeyRound}><div className="relative"><input required type={showPassword ? 'text' : 'password'} autoComplete={isLogin ? 'current-password' : 'new-password'} value={formData.password} onChange={(event) => setFormData({ ...formData, password: event.target.value })} placeholder={isLogin ? 'Your password' : 'At least 8 characters'} className="login-input pr-12" /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-1 top-1 grid size-10 place-items-center rounded-lg text-slate-400 hover:bg-slate-100" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></Field>
+            <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-bold"><Globe2 size={15} className="text-purple-600" />Learning language</span><select value={language} onChange={(event) => setLanguage(event.target.value)} className="login-input">{languages.map((item) => <option key={item}>{item}</option>)}</select></label>
+            {!isLogin && <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-purple-100 bg-purple-50/60 p-3 text-xs leading-5 text-slate-600"><input type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} className="mt-1 size-4 accent-purple-600" /><span>I understand this prototype saves my local account on this device. A parent or guardian should assist younger learners.</span></label>}
+            <button disabled={isSubmitting} type="submit" className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-60">{isSubmitting ? 'Please wait…' : isLogin ? 'Continue learning' : 'Create my learning space'}<ArrowRight size={17} /></button>
+          </form>
 
-            <form onSubmit={isLogin ? handleLogin : handleSignup} className="space-y-5">
-              {!isLogin && <Field label="Your name" icon={UserRound}><input required value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} placeholder="e.g. Asha Reddy" className="field-input" /></Field>}
-              <Field label="Email address" icon={UserRound}><input required type="email" value={formData.email} onChange={(event) => setFormData({ ...formData, email: event.target.value })} placeholder="you@example.com" className="field-input" /></Field>
-              <Field label="Password" icon={KeyRound}>
-                <div className="relative"><input required type={showPassword ? "text" : "password"} value={formData.password} onChange={(event) => setFormData({ ...formData, password: event.target.value })} placeholder="Your password" className="field-input pr-12" /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-1 top-1 grid size-10 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5d56d8]" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
-              </Field>
-              {!isLogin && <><p className="-mt-3 text-xs text-slate-500">Use at least 8 characters. Your password is salted and derived before local storage.</p><label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#deddd4] bg-white p-3 text-xs leading-5 text-slate-600"><input type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} className="mt-1 size-4 accent-[#5d56d8]" /><span>I understand this prototype stores my learning account on this device and I agree to use the platform responsibly. A parent or guardian should assist younger learners.</span></label></>}
-
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Globe2 size={15} className="text-[#5d56d8]" />Language</span><select value={language} onChange={(event) => setLanguage(event.target.value)} className="field-input cursor-pointer appearance-none bg-[linear-gradient(45deg,transparent_50%,#64748b_50%),linear-gradient(135deg,#64748b_50%,transparent_50%)] bg-[position:calc(100%-18px)_calc(50%-2px),calc(100%-13px)_calc(50%-2px)] bg-[size:5px_5px,5px_5px] bg-no-repeat pr-10">{languages.map((item) => <option key={item}>{item}</option>)}</select></label>
-
-              <button type="submit" className="group flex h-13 w-full items-center justify-center gap-2 rounded-xl bg-[#0b1020] px-5 text-[15px] font-bold text-white shadow-[0_12px_26px_rgba(11,16,32,.16)] transition duration-300 hover:-translate-y-0.5 hover:bg-[#202a47] hover:shadow-[0_18px_30px_rgba(11,16,32,.20)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#5d56d8]">
-                {isLogin ? "Continue learning" : "Create my space"}<ArrowRight size={18} className="transition-transform duration-300 group-hover:translate-x-1" />
-              </button>
-            </form>
-
-            {isLogin && <button type="button" onClick={useDemo} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[#deddd4] bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-[#b9b5ee] hover:bg-[#f7f6ff] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5d56d8]"><Sparkles size={16} className="text-[#5d56d8]" />Try the learner demo<ChevronRight size={16} /></button>}
-
-            <div className="my-7 flex items-center gap-3"><div className="h-px flex-1 bg-[#dfddd4]" /><span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[.14em] text-slate-400">or</span><div className="h-px flex-1 bg-[#dfddd4]" /></div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button type="button" onClick={enterOffline} className="secondary-action"><WifiOff size={17} />Use offline</button>
-              <button type="button" onClick={enterTeacher} className="secondary-action"><UsersRound size={17} />Teacher view</button>
-            </div>
-
-            <div className="mt-8 rounded-xl bg-[#eceae2] p-4"><p className="flex items-start gap-2 text-xs leading-5 text-slate-600"><Check size={15} className="mt-0.5 shrink-0 text-emerald-700" /><span><strong className="font-semibold text-slate-800">Your pace stays yours.</strong> Core learning data is saved locally, so a dropped connection doesn’t end a study session.</span></p></div>
-
-            <p className="mt-7 text-center text-sm text-slate-500">{isLogin ? "New to EduFlow?" : "Already have a learning space?"} <button type="button" onClick={() => setIsLogin(!isLogin)} className="font-bold text-[#5149cb] underline decoration-[#b7b3ee] underline-offset-4 transition hover:text-[#322b99]">{isLogin ? "Create an account" : "Sign in"}</button></p>
-            <p className="mt-6 text-center font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[.12em] text-slate-400">Built for thoughtful progress</p>
-          </motion.div>
+          {isLogin && <><button onClick={useDemo} type="button" className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-purple-200 bg-purple-50 font-bold text-purple-700 hover:bg-purple-100"><Sparkles size={16} />Open learner demo</button><div className="my-5 flex items-center gap-3"><span className="h-px flex-1 bg-slate-200" /><span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Other views</span><span className="h-px flex-1 bg-slate-200" /></div><div className="grid grid-cols-2 gap-3"><button type="button" onClick={enterOffline} className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-bold hover:bg-slate-50"><WifiOff size={16} />Offline</button><button type="button" onClick={enterTeacher} className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 py-3 text-sm font-bold hover:bg-slate-50"><UsersRound size={16} />Teacher demo</button></div></>}
+          <p className="mt-6 flex items-start gap-2 rounded-xl bg-emerald-50 p-3 text-xs leading-5 text-emerald-800"><Check className="mt-0.5 size-4 shrink-0" />Your class, language, subjects, and accessibility choices stay under your control.</p>
         </section>
       </div>
-    </main>
-  );
+    </div>
+  </main>;
 }
 
 function Field({ label, icon: Icon, children }: { label: string; icon: typeof UserRound; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Icon size={15} className="text-[#5d56d8]" />{label}</span>{children}</label>;
+  return <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-bold"><Icon size={15} className="text-purple-600" />{label}</span>{children}</label>;
 }
