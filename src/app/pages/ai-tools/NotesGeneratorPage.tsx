@@ -1,0 +1,668 @@
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Badge } from '../../components/ui/badge';
+import { useNavigate } from 'react-router';
+import { Navigation } from '../../components/Navigation';
+import { useApp } from '../../context/AppContext';
+import { 
+  FileText, 
+  ArrowLeft, 
+  Sparkles, 
+  Download,
+  Copy,
+  RefreshCw,
+  BookOpen,
+  CheckCircle
+} from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { toast } from 'sonner';
+
+export default function NotesGeneratorPage() {
+  const navigate = useNavigate();
+  const { isOnline } = useApp();
+  const [topic, setTopic] = useState('');
+  const [style, setStyle] = useState('structured');
+  const [length, setLength] = useState('medium');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [notes, setNotes] = useState('');
+
+  const generateNotes = () => {
+    if (!topic.trim()) return;
+
+    setIsGenerating(true);
+
+    // Simulate AI API call with intelligent topic-based content
+    setTimeout(() => {
+      const lowerTopic = topic.toLowerCase();
+      let mockNotes = '';
+
+      // Add variation based on timestamp to avoid repetition
+      const variation = Date.now() % 3; // Creates 3 unique variations
+
+      // Programming topics
+      if (lowerTopic.includes('python') || lowerTopic.includes('javascript') || lowerTopic.includes('java') || lowerTopic.includes('programming')) {
+        const lang = lowerTopic.includes('python') ? 'Python' : lowerTopic.includes('javascript') ? 'JavaScript' : lowerTopic.includes('java') ? 'Java' : 'Programming';
+
+        const overviews = [
+          `${lang} is a powerful programming language widely used in modern software development. These notes cover essential concepts, syntax, and best practices.`,
+          `${lang} is a versatile and popular programming language known for its ${lang === 'Python' ? 'simplicity and readability' : lang === 'JavaScript' ? 'ubiquity in web development' : 'robust enterprise applications'}. Master these core concepts to become proficient.`,
+          `${lang} programming language has revolutionized ${lang === 'Python' ? 'data science and automation' : lang === 'JavaScript' ? 'interactive web experiences' : 'large-scale software systems'}. This comprehensive guide covers fundamental to advanced topics.`
+        ];
+
+        const introSections = [
+          `## Overview\n${overviews[variation]}\n\n## Core Concepts`,
+          `## Introduction\n${overviews[variation]}\n\n## Key Learning Areas`,
+          `## Getting Started\n${overviews[variation]}\n\n## Essential Topics`
+        ];
+
+        mockNotes = `# ${topic}\n\n${introSections[variation]}
+
+## Overview
+${lang} is a powerful programming language widely used in modern software development. These notes cover essential concepts, syntax, and best practices.
+
+## Core Concepts
+
+### 1. Syntax & Data Types
+- **Variables**: Storing and manipulating data
+- **Data Types**: Strings, Numbers, Booleans, Arrays/Lists, Objects/Dictionaries
+- **Operators**: Arithmetic (+, -, *, /), Comparison (==, !=, <, >), Logical (&&, ||, !)
+
+### 2. Control Flow
+\`\`\`${lang.toLowerCase()}
+// Conditionals
+if (condition) {
+  // code
+} else if (otherCondition) {
+  // code
+} else {
+  // code
+}
+
+// Loops
+for (let i = 0; i < 10; i++) {
+  // iterate
+}
+
+while (condition) {
+  // loop
+}
+\`\`\`
+
+### 3. Functions
+- **Definition**: Reusable code blocks
+- **Parameters**: Input values
+- **Return Values**: Output results
+- **Scope**: Variable accessibility
+
+### 4. Object-Oriented Programming (OOP)
+- Classes and Objects
+- Inheritance
+- Encapsulation
+- Polymorphism
+
+## Practical Examples
+
+### Example 1: Function Declaration
+\`\`\`${lang.toLowerCase()}
+function greet(name) {
+  return "Hello, " + name + "!";
+}
+console.log(greet("World")); // "Hello, World!"
+\`\`\`
+
+### Example 2: Array Operations
+\`\`\`${lang.toLowerCase()}
+const numbers = [1, 2, 3, 4, 5];
+const doubled = numbers.map(n => n * 2);
+console.log(doubled); // [2, 4, 6, 8, 10]
+\`\`\`
+
+## Key Takeaways
+✓ Master syntax before diving into frameworks
+✓ Practice coding daily for muscle memory
+✓ Build real projects to solidify learning
+✓ Read others' code to learn best practices
+✓ Debug systematically, not randomly
+
+## Study Tips
+- **Code Daily**: Consistency beats intensity
+- **Build Projects**: Theory + practice = mastery
+- **Read Documentation**: Official docs are gold
+- **Use Debugger**: Step through code to understand flow
+- **Join Communities**: Stack Overflow, Reddit, Discord
+
+## Resources
+- Official ${lang} Documentation
+- freeCodeCamp & Codecademy
+- LeetCode & HackerRank (practice)
+- GitHub (explore open source)
+- YouTube tutorials
+
+---
+*Generated by EduFlow - Your Personalized Learning Assistant*`;
+      }
+
+      // Math/Calculus topics
+      else if (lowerTopic.includes('calculus') || lowerTopic.includes('math') || lowerTopic.includes('algebra') || lowerTopic.includes('geometry')) {
+        const subject = lowerTopic.includes('calculus') ? 'Calculus' : lowerTopic.includes('algebra') ? 'Algebra' : lowerTopic.includes('geometry') ? 'Geometry' : 'Mathematics';
+        mockNotes = `# ${topic}
+
+## Overview
+${subject} is a fundamental branch of mathematics that provides tools for solving real-world problems. Mastering these concepts opens doors to advanced STEM fields.
+
+## Core Concepts
+
+### 1. ${subject === 'Calculus' ? 'Limits & Continuity' : subject === 'Algebra' ? 'Equations & Variables' : 'Shapes & Theorems'}
+${subject === 'Calculus'
+  ? '- **Limits**: Approaching a value\n- **Continuity**: No breaks in function\n- **Applications**: Finding instantaneous rates'
+  : subject === 'Algebra'
+  ? '- **Variables**: Unknown values (x, y, z)\n- **Linear Equations**: ax + b = c\n- **Quadratic Equations**: ax² + bx + c = 0'
+  : '- **Angles**: Acute, obtuse, right\n- **Triangles**: Pythagorean theorem\n- **Circles**: Area = πr², Circumference = 2πr'}
+
+### 2. ${subject === 'Calculus' ? 'Derivatives' : subject === 'Algebra' ? 'Factoring' : 'Area & Volume'}
+${subject === 'Calculus'
+  ? '**Derivative**: Rate of change\n\n**Power Rule**: d/dx(x^n) = n·x^(n-1)\n\n**Example**: d/dx(x³) = 3x²'
+  : subject === 'Algebra'
+  ? '**Factoring**: Breaking down expressions\n\n**Example**: x² - 5x + 6 = (x - 2)(x - 3)'
+  : '**Triangle Area**: A = ½ × base × height\n**Circle Area**: A = πr²\n**Volume**: V = l × w × h'}
+
+### 3. ${subject === 'Calculus' ? 'Integrals' : subject === 'Algebra' ? 'Systems of Equations' : 'Proofs & Theorems'}
+${subject === 'Calculus'
+  ? '- **Integral**: Area under curve\n- **Antiderivative**: Reverse of derivative\n- **Fundamental Theorem**: Connects derivatives and integrals'
+  : subject === 'Algebra'
+  ? '- **Substitution Method**: Solve for one variable\n- **Elimination Method**: Add/subtract equations\n- **Graphing**: Find intersection point'
+  : '- **Pythagorean Theorem**: a² + b² = c²\n- **Congruence**: Same size and shape\n- **Similarity**: Same shape, different size'}
+
+## Problem-Solving Strategy
+1. **Read carefully**: Understand what's being asked
+2. **Identify knowns/unknowns**: List given info
+3. **Choose method**: Pick appropriate formula/technique
+4. **Solve step-by-step**: Show all work
+5. **Check answer**: Does it make sense?
+
+## Practice Problems
+1. ${subject === 'Calculus' ? 'Find derivative of f(x) = 2x³ + 5x' : subject === 'Algebra' ? 'Solve: 3x + 7 = 22' : 'Find area of triangle with base 6cm, height 8cm'}
+2. ${subject === 'Calculus' ? 'Integrate ∫(4x + 3)dx' : subject === 'Algebra' ? 'Factor: x² - 9' : 'Calculate hypotenuse if a=3, b=4'}
+3. ${subject === 'Calculus' ? 'Find limit: lim(x→2) x² + x' : subject === 'Algebra' ? 'Solve system: x+y=5, x-y=1' : 'Find circumference of circle r=5'}
+
+## Key Takeaways
+✓ ${subject} builds on previous concepts - review basics regularly
+✓ Practice problems daily for mastery
+✓ Understand WHY formulas work, not just HOW
+✓ Draw diagrams to visualize problems
+✓ Check your work - catch silly mistakes
+
+## Study Resources
+- Khan Academy (free video lessons)
+- Paul's Online Math Notes
+- Wolfram Alpha (check answers)
+- Practice worksheets
+- Study groups
+
+---
+*Generated by EduFlow - Your Personalized Learning Assistant*`;
+      }
+
+      // Science topics
+      else if (lowerTopic.includes('physics') || lowerTopic.includes('chemistry') || lowerTopic.includes('biology')) {
+        const science = lowerTopic.includes('physics') ? 'Physics' : lowerTopic.includes('chemistry') ? 'Chemistry' : 'Biology';
+        mockNotes = `# ${topic}
+
+## Overview
+${science} is the study of ${science === 'Physics' ? 'matter, energy, and their interactions' : science === 'Chemistry' ? 'matter, its properties, and transformations' : 'living organisms and life processes'}. Understanding these principles is essential for careers in medicine, engineering, and research.
+
+## Core Concepts
+
+### 1. ${science === 'Physics' ? 'Motion & Forces' : science === 'Chemistry' ? 'Atoms & Molecules' : 'Cell Structure'}
+${science === 'Physics'
+  ? '- **Newton\'s Laws**: F = ma, action-reaction\n- **Velocity**: Speed with direction\n- **Acceleration**: Change in velocity over time'
+  : science === 'Chemistry'
+  ? '- **Atoms**: Protons, neutrons, electrons\n- **Periodic Table**: Elements organized by properties\n- **Chemical Bonds**: Ionic, covalent, metallic'
+  : '- **Cell Membrane**: Protective barrier\n- **Nucleus**: Contains DNA\n- **Mitochondria**: Energy production (ATP)\n- **Ribosomes**: Protein synthesis'}
+
+### 2. ${science === 'Physics' ? 'Energy & Work' : science === 'Chemistry' ? 'Chemical Reactions' : 'Genetics & DNA'}
+${science === 'Physics'
+  ? '**Work**: W = Force × Distance\n**Energy Types**: Kinetic, Potential, Thermal\n**Conservation**: Energy cannot be created/destroyed'
+  : science === 'Chemistry'
+  ? '**Reactants → Products**\n**Types**: Synthesis, Decomposition, Combustion\n**Balancing**: Equal atoms on both sides'
+  : '**DNA**: Genetic blueprint (A-T, C-G base pairs)\n**Genes**: Segments of DNA coding for traits\n**Inheritance**: Dominant vs recessive alleles'}
+
+### 3. ${science === 'Physics' ? 'Electricity & Magnetism' : science === 'Chemistry' ? 'States of Matter' : 'Evolution & Ecology'}
+${science === 'Physics'
+  ? '- **Current**: Flow of electrons (I = Q/t)\n- **Voltage**: Electrical potential difference\n- **Circuits**: Series and parallel configurations'
+  : science === 'Chemistry'
+  ? '- **Solid**: Fixed shape, volume\n- **Liquid**: Fixed volume, takes container shape\n- **Gas**: No fixed shape or volume\n- **Phase Changes**: Melting, freezing, evaporation'
+  : '- **Natural Selection**: Survival of the fittest\n- **Adaptation**: Traits that aid survival\n- **Ecosystems**: Organisms + environment\n- **Food Chains**: Energy flow in nature'}
+
+## Laboratory Skills
+${science === 'Chemistry' || science === 'Biology'
+  ? '- **Safety First**: Goggles, gloves, proper disposal\n- **Measurements**: Accurate use of equipment\n- **Observation**: Detailed note-taking\n- **Data Analysis**: Graphs, calculations, conclusions'
+  : '- **Experimental Design**: Hypothesis, variables, controls\n- **Measurements**: Precision and accuracy\n- **Data Collection**: Systematic recording\n- **Error Analysis**: Understanding uncertainties'}
+
+## Real-World Applications
+- ${science === 'Physics' ? 'Engineering, Aerospace, Electronics, Renewable Energy' : science === 'Chemistry' ? 'Pharmaceuticals, Materials Science, Environmental Protection' : 'Medicine, Agriculture, Biotechnology, Conservation'}
+
+## Key Takeaways
+✓ ${science} explains the world around us
+✓ Experiments reinforce theoretical knowledge
+✓ Mathematics is the language of ${science.toLowerCase()}
+✓ Connect concepts - everything is related
+✓ Ask "why" and "how" constantly
+
+## Study Strategies
+- Create concept maps showing relationships
+- Do practice problems and labs
+- Watch demonstrations and simulations
+- Form study groups for discussion
+- Teach concepts to solidify understanding
+
+## Resources
+- Khan Academy ${science} courses
+- MIT OpenCourseWare
+- PhET Interactive Simulations
+- Scientific journals and articles
+- YouTube science channels
+
+---
+*Generated by EduFlow - Your Personalized Learning Assistant*`;
+      }
+
+      // Web Development
+      else if (lowerTopic.includes('web') || lowerTopic.includes('html') || lowerTopic.includes('css') || lowerTopic.includes('react')) {
+        mockNotes = `# ${topic}
+
+## Overview
+Web development is the art of building websites and web applications. It combines creativity with technical skills to create engaging online experiences.
+
+## The Three Pillars
+
+### 1. HTML (Structure)
+- **Purpose**: Defines page content and structure
+- **Elements**: \`<div>\`, \`<p>\`, \`<h1>\`-\`<h6>\`, \`<img>\`, \`<a>\`
+- **Semantic HTML**: \`<header>\`, \`<nav>\`, \`<article>\`, \`<footer>\`
+
+**Example:**
+\`\`\`html
+<article>
+  <h1>Welcome to Web Dev</h1>
+  <p>This is a paragraph.</p>
+  <a href="/learn">Learn More</a>
+</article>
+\`\`\`
+
+### 2. CSS (Styling)
+- **Purpose**: Controls appearance and layout
+- **Selectors**: Element, class (.class), ID (#id)
+- **Properties**: color, font-size, margin, padding
+- **Layouts**: Flexbox, Grid, Positioning
+
+**Example:**
+\`\`\`css
+.card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+\`\`\`
+
+### 3. JavaScript (Interactivity)
+- **Purpose**: Makes pages dynamic and interactive
+- **DOM Manipulation**: Changing HTML/CSS with code
+- **Events**: Click, scroll, submit, etc.
+- **APIs**: Fetching data from servers
+
+**Example:**
+\`\`\`javascript
+document.querySelector('button').addEventListener('click', () => {
+  alert('Button clicked!');
+});
+\`\`\`
+
+## Modern Web Development
+
+### Frameworks & Libraries
+- **React**: Component-based UI library
+- **Vue**: Progressive JavaScript framework
+- **Angular**: Full-featured framework
+- **Tailwind CSS**: Utility-first CSS
+
+### Backend Technologies
+- **Node.js**: JavaScript on the server
+- **Express**: Web application framework
+- **Databases**: MongoDB, PostgreSQL, MySQL
+- **APIs**: RESTful, GraphQL
+
+## Development Workflow
+1. **Plan**: Wireframes, mockups, user stories
+2. **Develop**: Write HTML, CSS, JavaScript
+3. **Test**: Cross-browser, responsive, accessibility
+4. **Deploy**: Hosting (Vercel, Netlify, AWS)
+5. **Maintain**: Updates, bug fixes, improvements
+
+## Best Practices
+✓ **Responsive Design**: Works on all devices
+✓ **Accessibility**: Usable by everyone
+✓ **Performance**: Fast loading times
+✓ **SEO**: Search engine optimization
+✓ **Security**: Protect user data
+✓ **Clean Code**: Readable and maintainable
+
+## Learning Path
+1. **Beginner**: HTML, CSS, basic JavaScript
+2. **Intermediate**: Advanced JS, Git, frameworks
+3. **Advanced**: Backend, databases, DevOps
+4. **Expert**: Architecture, optimization, leadership
+
+## Project Ideas
+- Personal portfolio website
+- Todo list application
+- Weather app with API
+- Blog platform
+- E-commerce site
+
+## Resources
+- MDN Web Docs (reference)
+- freeCodeCamp (interactive)
+- CSS-Tricks (tips & tricks)
+- JavaScript.info (in-depth JS)
+- GitHub (code examples)
+
+---
+*Generated by EduFlow - Your Personalized Learning Assistant*`;
+      }
+
+      // Default template for other topics
+      else {
+        mockNotes = `# ${topic}
+
+## Overview
+${topic} is an important subject that requires dedicated study and practice. These comprehensive notes will guide you through the essential concepts and applications.
+
+## Key Concepts
+
+### 1. Foundation Principles
+- **Core Definition**: Understanding what ${topic} truly means
+- **Historical Context**: How ${topic} developed over time
+- **Importance**: Why ${topic} matters in today's world
+- **Applications**: Where ${topic} is used practically
+
+### 2. Main Components
+- **Component A**: First essential element of ${topic}
+- **Component B**: Second critical aspect to master
+- **Component C**: Advanced concepts building on basics
+- **Integration**: How components work together
+
+### 3. Practical Applications
+
+#### In Academia
+- Research opportunities
+- Further study pathways
+- Related disciplines
+- Career applications
+
+#### In Real World
+- Industry use cases
+- Everyday examples
+- Problem-solving scenarios
+- Innovation opportunities
+
+## Detailed Analysis
+
+### Understanding ${topic}
+${topic} can be broken down into manageable parts for easier comprehension. The fundamental approach involves:
+
+1. **Learning Basics**: Start with foundational concepts
+2. **Building Knowledge**: Layer new information on top
+3. **Practicing**: Apply concepts through exercises
+4. **Mastering**: Achieve deep understanding through repetition
+
+### Common Challenges
+- **Challenge 1**: Complexity of terminology
+  - Solution: Create a glossary, use flashcards
+- **Challenge 2**: Abstract concepts
+  - Solution: Find concrete examples, visualize
+- **Challenge 3**: Information overload
+  - Solution: Study in chunks, spaced repetition
+
+## Study Strategies
+
+### Active Learning
+✓ Take notes in your own words
+✓ Create mind maps and diagrams
+✓ Explain concepts to others
+✓ Practice with real problems
+✓ Test yourself regularly
+
+### Time Management
+- **Daily**: 30-60 minutes focused study
+- **Weekly**: Review and practice exercises
+- **Monthly**: Comprehensive review and assessment
+- **Before Exams**: Intensive practice and mock tests
+
+## Key Takeaways
+✓ ${topic} requires consistent practice
+✓ Understanding > memorization
+✓ Connect new knowledge to existing understanding
+✓ Regular review prevents forgetting
+✓ Application solidifies learning
+
+## Additional Resources
+
+### Books & Articles
+- Recommended textbooks
+- Academic papers
+- Online articles
+- Study guides
+
+### Online Learning
+- Video tutorials (YouTube, Coursera)
+- Interactive courses
+- Practice platforms
+- Discussion forums
+
+### Tools & Apps
+- Study apps for review
+- Simulation software
+- Calculator/tools specific to ${topic}
+- Collaboration platforms
+
+## Practice Questions
+1. Define ${topic} in your own words
+2. What are the main components of ${topic}?
+3. How is ${topic} applied in real-world scenarios?
+4. What challenges did you face learning ${topic}?
+5. How does ${topic} connect to other subjects?
+
+---
+*Generated by EduFlow - Your Personalized Learning Assistant*`;
+      }
+
+      // Add unique metadata to make each generation feel fresh
+      const timestamp = new Date().toLocaleString();
+      const uniqueId = `GEN-${Date.now().toString(36).toUpperCase()}`;
+
+      mockNotes += `\n\n---\n**Generation Info:**\n- Generated: ${timestamp}\n- Document ID: ${uniqueId}\n- Style: ${style.charAt(0).toUpperCase() + style.slice(1)}\n- Length: ${length.charAt(0).toUpperCase() + length.slice(1)}`;
+
+      setNotes(mockNotes);
+      setIsGenerating(false);
+    }, 2000);
+  };
+
+  const copyNotes = () => {
+    navigator.clipboard.writeText(notes);
+    toast.success('Notes copied to clipboard!');
+  };
+
+  const downloadNotes = () => {
+    const blob = new Blob([notes], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${topic.replace(/\s+/g, '_')}_notes.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success('Notes downloaded!');
+  };
+
+  return (
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-green-50 p-6 lg:ml-64">
+        <div className="max-w-5xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <Button variant="ghost" onClick={() => navigate('/ai-tools')} className="mb-4">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to AI Tools
+            </Button>
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                  AI Notes Generator
+                </h1>
+                <p className="text-gray-600">Transform any topic into structured study notes</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Input Panel */}
+            <div className="lg:col-span-1">
+              <Card className="shadow-lg border-0 sticky top-6">
+                <CardHeader>
+                  <CardTitle>Configure Notes</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Topic</label>
+                    <Input
+                      placeholder="Enter topic name..."
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Note Style</label>
+                    <Select value={style} onValueChange={setStyle}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="structured">📋 Structured</SelectItem>
+                        <SelectItem value="bullet">• Bullet Points</SelectItem>
+                        <SelectItem value="detailed">📚 Detailed</SelectItem>
+                        <SelectItem value="summary">✨ Summary</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Length</label>
+                    <Select value={length} onValueChange={setLength}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="short">Short (1-2 pages)</SelectItem>
+                        <SelectItem value="medium">Medium (3-5 pages)</SelectItem>
+                        <SelectItem value="long">Long (6+ pages)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button 
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                    onClick={generateNotes}
+                    disabled={isGenerating || !topic.trim() || !isOnline}
+                  >
+                    {isGenerating ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate Notes
+                      </>
+                    )}
+                  </Button>
+
+                  {!isOnline && (
+                    <p className="text-sm text-orange-600 text-center">Internet connection required</p>
+                  )}
+
+                  {notes && (
+                    <div className="space-y-2 pt-4 border-t">
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={copyNotes}
+                      >
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copy Notes
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={downloadNotes}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Download (.md)
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Output Panel */}
+            <div className="lg:col-span-2">
+              {!notes ? (
+                <Card className="shadow-lg border-0 h-full flex items-center justify-center min-h-[600px]">
+                  <CardContent className="text-center">
+                    <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                      Ready to Generate Notes
+                    </h3>
+                    <p className="text-gray-500 max-w-md">
+                      Enter a topic and click "Generate Notes" to create structured study materials
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="shadow-lg border-0">
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Generated Notes</CardTitle>
+                      <Badge className="bg-gradient-to-r from-green-500 to-emerald-500">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Ready
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none bg-white p-6 rounded-lg border">
+                      <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                        {notes}
+                      </pre>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
