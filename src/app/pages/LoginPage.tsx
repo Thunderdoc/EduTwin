@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { useApp, type UserProfile } from "../context/AppContext";
@@ -30,9 +30,11 @@ const learningSignals = [
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { setIsAuthenticated, setUserRole, language, setLanguage, setIsOnline, setUserProfile } = useApp();
-  const [isLogin, setIsLogin] = useState(true);
+  const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
   const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
 
   const completeLogin = (profile: UserProfile, destination: string) => {
@@ -60,6 +62,10 @@ export default function LoginPage() {
     event.preventDefault();
     if (!formData.name || !formData.email || !formData.password) {
       toast.error("Complete each field to create your learning space.");
+      return;
+    }
+    if (!acceptedTerms) {
+      toast.error("Please confirm the privacy and responsible-use notice.");
       return;
     }
 
@@ -164,6 +170,7 @@ export default function LoginPage() {
 
         <section className="flex min-h-screen items-center justify-center bg-[#f8f7f2] px-5 py-9 sm:px-8 lg:px-12">
           <motion.div className="w-full max-w-[430px]" initial={{ opacity: 0, x: 28 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.65, ease: "easeOut" }}>
+            <Link to="/" className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-[#5149cb]"><ArrowRight className="size-4 rotate-180" />Back to home</Link>
             <div className="mb-10 flex items-center justify-between lg:hidden">
               <div className="flex items-center gap-2.5"><div className="grid size-10 place-items-center rounded-xl bg-[#0b1020] text-amber-300"><BrainCircuit size={21} /></div><span className="font-[family-name:var(--font-display)] text-xl font-extrabold tracking-[-.04em]">EduFlow</span></div>
               <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[.14em] text-slate-500">v2.1</span>
@@ -181,6 +188,7 @@ export default function LoginPage() {
               <Field label="Password" icon={KeyRound}>
                 <div className="relative"><input required type={showPassword ? "text" : "password"} value={formData.password} onChange={(event) => setFormData({ ...formData, password: event.target.value })} placeholder="Your password" className="field-input pr-12" /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-1 top-1 grid size-10 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5d56d8]" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
               </Field>
+              {!isLogin && <><p className="-mt-3 text-xs text-slate-500">Use at least 8 characters. Your password is salted and derived before local storage.</p><label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#deddd4] bg-white p-3 text-xs leading-5 text-slate-600"><input type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} className="mt-1 size-4 accent-[#5d56d8]" /><span>I understand this prototype stores my learning account on this device and I agree to use the platform responsibly. A parent or guardian should assist younger learners.</span></label></>}
 
               <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Globe2 size={15} className="text-[#5d56d8]" />Language</span><select value={language} onChange={(event) => setLanguage(event.target.value)} className="field-input cursor-pointer appearance-none bg-[linear-gradient(45deg,transparent_50%,#64748b_50%),linear-gradient(135deg,#64748b_50%,transparent_50%)] bg-[position:calc(100%-18px)_calc(50%-2px),calc(100%-13px)_calc(50%-2px)] bg-[size:5px_5px,5px_5px] bg-no-repeat pr-10">{languages.map((item) => <option key={item}>{item}</option>)}</select></label>
 

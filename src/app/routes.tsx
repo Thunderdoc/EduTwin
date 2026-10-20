@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ComponentType } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
 import { useApp } from './context/AppContext';
+import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
 const DigitalTwinDashboard = lazy(() => import('./pages/DigitalTwinDashboard'));
@@ -52,7 +53,7 @@ function protectedPage(Page: ComponentType, roles: AppRole[] = ['student', 'teac
   return function ProtectedPage() {
     const { isAuthenticated, isHydrated, userRole } = useApp();
     if (!isHydrated) return <main className="grid min-h-screen place-items-center bg-slate-50" aria-live="polite"><p className="font-medium text-slate-600">Restoring your learning space…</p></main>;
-    if (!isAuthenticated) return <Navigate to="/" replace />;
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
     if (!userRole || !roles.includes(userRole)) return <Navigate to={userRole === 'teacher' ? '/teacher' : '/dashboard'} replace />;
     return <Suspense fallback={<main className="grid min-h-screen place-items-center bg-slate-50" aria-live="polite"><p className="font-medium text-slate-600">Loading this workspace…</p></main>}><Page /></Suspense>;
   };
@@ -65,6 +66,10 @@ export const router = createBrowserRouter(
   [
     {
       path: '/',
+      Component: HomePage,
+    },
+    {
+      path: '/login',
       Component: LoginPage,
     },
     {

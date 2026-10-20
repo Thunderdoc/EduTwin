@@ -40,8 +40,8 @@ export default function App() {
   return (
     <AppErrorBoundary>
       <AppProvider>
-        <a className="skip-link" href="#main-content">Skip to main content</a>
-        <RouterProvider router={router} />
+        <a className="skip-link" href="#app-route">Skip to main content</a>
+        <div id="app-route" tabIndex={-1}><RouterProvider router={router} /></div>
         <Toaster position="top-right" richColors />
         <PWAInstallPrompt />
       </AppProvider>

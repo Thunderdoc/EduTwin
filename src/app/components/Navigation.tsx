@@ -31,7 +31,7 @@ export function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Don't show navigation on login page
-  if (location.pathname === '/') {
+  if (location.pathname === '/' || location.pathname === '/login') {
     return null;
   }
 
@@ -39,7 +39,7 @@ export function Navigation() {
     setIsAuthenticated(false);
     setUserRole(null);
     clearOfflineStorage();
-    navigate('/');
+    navigate('/login');
   };
 
   const studentNavItems = [
