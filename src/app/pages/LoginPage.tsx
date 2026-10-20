@@ -27,6 +27,16 @@ const learningSignals = [
   { label: "Your progress", value: "Private by design" },
 ];
 
+const readLocalUsers = (): Array<UserProfile & { password: string }> => {
+  try {
+    const value = JSON.parse(localStorage.getItem("eduflow_offline_users") || "[]");
+    return Array.isArray(value) ? value : [];
+  } catch {
+    localStorage.removeItem("eduflow_offline_users");
+    return [];
+  }
+};
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setIsAuthenticated, setUserRole, language, setLanguage, setIsOnline, setUserProfile } = useApp();
@@ -44,12 +54,13 @@ export default function LoginPage() {
 
   const handleLogin = (event: React.FormEvent) => {
     event.preventDefault();
-    const savedUsers = JSON.parse(localStorage.getItem("eduflow_offline_users") || "[]");
+    const email = formData.email.trim().toLowerCase();
+    const savedUsers = readLocalUsers();
     const existingUser = savedUsers.find(
-      (user: { email: string; password: string }) => user.email === formData.email && user.password === formData.password,
+      (user) => user.email.toLowerCase() === email && user.password === formData.password,
     );
 
-    if (existingUser || (formData.email === "student@eduflow.ai" && formData.password === "demo123")) {
+    if (existingUser || (email === "student@eduflow.ai" && formData.password === "demo123")) {
       completeLogin(
         existingUser || {
           id: `demo-${Date.now()}`,
@@ -73,8 +84,9 @@ export default function LoginPage() {
       return;
     }
 
-    const savedUsers = JSON.parse(localStorage.getItem("eduflow_offline_users") || "[]");
-    if (savedUsers.some((user: { email: string }) => user.email === formData.email)) {
+    const savedUsers = readLocalUsers();
+    const normalizedEmail = formData.email.trim().toLowerCase();
+    if (savedUsers.some((user) => user.email.toLowerCase() === normalizedEmail)) {
       toast.error("An account with this email already exists.", { description: "Try signing in instead." });
       return;
     }
@@ -82,7 +94,7 @@ export default function LoginPage() {
     const profile: UserProfile & { password: string } = {
       id: `user-${Date.now()}`,
       name: formData.name,
-      email: formData.email,
+      email: normalizedEmail,
       password: formData.password,
       role: "student",
       createdAt: new Date().toISOString(),
@@ -92,8 +104,10 @@ export default function LoginPage() {
   };
 
   const useDemo = () => {
-    setFormData({ name: "", email: "student@eduflow.ai", password: "demo123" });
-    toast.message("Demo details added", { description: "Press Continue to open the learner dashboard." });
+    completeLogin(
+      { id: "demo-student", name: "Demo Student", email: "student@eduflow.ai", role: "student", createdAt: new Date().toISOString() },
+      "/dashboard",
+    );
   };
 
   const enterOffline = () => {
