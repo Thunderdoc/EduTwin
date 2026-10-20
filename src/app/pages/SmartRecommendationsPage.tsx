@@ -41,6 +41,7 @@ const academicSuggestions = [
 
 const techSkills = [
   {
+    id: 'python-programming',
     title: 'Python Programming',
     icon: Code,
     level: 'Beginner to Advanced',
@@ -49,6 +50,7 @@ const techSkills = [
     trending: true,
   },
   {
+    id: 'web-development',
     title: 'Web Development',
     icon: Code,
     level: 'Beginner',
@@ -57,6 +59,7 @@ const techSkills = [
     trending: true,
   },
   {
+    id: 'ai-machine-learning',
     title: 'AI & Machine Learning',
     icon: Code,
     level: 'Intermediate',
@@ -68,6 +71,7 @@ const techSkills = [
 
 const nonTechSkills = [
   {
+    id: 'ui-ux-design',
     title: 'UI/UX Design',
     icon: Palette,
     level: 'Beginner',
@@ -75,6 +79,7 @@ const nonTechSkills = [
     description: 'Learn design principles, wireframing, and prototyping tools',
   },
   {
+    id: 'communication-skills',
     title: 'Communication Skills',
     icon: MessageSquare,
     level: 'All Levels',
@@ -82,6 +87,7 @@ const nonTechSkills = [
     description: 'Enhance verbal and written communication for professional success',
   },
   {
+    id: 'creative-thinking',
     title: 'Creative Thinking',
     icon: Lightbulb,
     level: 'All Levels',
@@ -193,7 +199,7 @@ export default function SmartRecommendationsPage() {
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-gray-600 mb-4">{skill.description}</p>
-                      <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
+                      <Button onClick={() => navigate(`/courses/${skill.id}`)} className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
                         Explore Course
                       </Button>
                     </CardContent>
@@ -220,7 +226,7 @@ export default function SmartRecommendationsPage() {
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-gray-600 mb-4">{skill.description}</p>
-                      <Button variant="outline" className="w-full border-purple-300 hover:bg-purple-50">
+                      <Button onClick={() => navigate(`/courses/${skill.id}`)} variant="outline" className="w-full border-purple-300 hover:bg-purple-50">
                         Explore Course
                       </Button>
                     </CardContent>

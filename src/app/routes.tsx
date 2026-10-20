@@ -9,6 +9,7 @@ const AIChatPage = lazy(() => import('./pages/AIChatPage'));
 const AdaptiveLearningPage = lazy(() => import('./pages/AdaptiveLearningPage'));
 const CognitiveToolsPage = lazy(() => import('./pages/CognitiveToolsPage'));
 const SmartRecommendationsPage = lazy(() => import('./pages/SmartRecommendationsPage'));
+const CoursePage = lazy(() => import('./pages/CoursePage'));
 const TimetablePage = lazy(() => import('./pages/TimetablePage'));
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
 const SubjectSelectionPage = lazy(() => import('./pages/SubjectSelectionPage'));
@@ -97,6 +98,10 @@ export const router = createBrowserRouter(
     {
       path: '/recommendations',
       Component: studentPage(SmartRecommendationsPage),
+    },
+    {
+      path: '/courses/:courseId',
+      Component: studentPage(CoursePage),
     },
     {
       path: '/timetable',
