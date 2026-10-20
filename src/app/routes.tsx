@@ -14,6 +14,7 @@ const TimetablePage = lazy(() => import('./pages/TimetablePage'));
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
 const SubjectSelectionPage = lazy(() => import('./pages/SubjectSelectionPage'));
 const CurriculumLibraryPage = lazy(() => import('./pages/CurriculumLibraryPage'));
+const LessonPlayerPage = lazy(() => import('./pages/LessonPlayerPage'));
 
 // Personalization & Autonomous Learning Pages
 const LearnerSetupPage = lazy(() => import('./pages/LearnerSetupPage'));
@@ -130,6 +131,10 @@ export const router = createBrowserRouter(
     {
       path: '/curriculum',
       Component: studentPage(CurriculumLibraryPage),
+    },
+    {
+      path: '/learn/:grade/:subject/:topic',
+      Component: studentPage(LessonPlayerPage),
     },
     // Personalization & Autonomous Learning Pages
     {

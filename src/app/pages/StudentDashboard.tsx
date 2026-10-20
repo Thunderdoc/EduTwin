@@ -31,6 +31,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { useState, useEffect } from 'react';
 import { curriculumForGrade } from '../lib/schoolCurriculum';
+import { getLessonProgress, progressSummary } from '../services/learningProgress';
 
 const learningProgressData = [
   { day: 'Mon', score: 65, id: 'mon' },
@@ -63,14 +64,10 @@ export default function StudentDashboard() {
   // Daily plan is derived from the assigned learner class and subjects.
   const assignedCurriculum = curriculumForGrade(learnerProfile?.grade ?? 6);
   const assignedSubjects = selectedSubjects.length ? selectedSubjects : Object.keys(assignedCurriculum.subjects);
-  const todaysPlan = assignedSubjects.slice(0, 3).map((subject, index) => ({
-    id: index + 1,
-    subject,
-    topic: (assignedCurriculum.subjects[subject] || ['Foundations and practice'])[index % (assignedCurriculum.subjects[subject]?.length || 1)],
-    duration: Math.max(10, Math.round(userPreferences.dailyGoalMinutes / Math.min(4, assignedSubjects.length + 1))),
-    completed: false,
-    icon: ['📘', '🧠', '✍️'][index],
-  })).concat([{ id: 4, subject: 'Review', topic: 'Knowledge check and spaced revision', duration: 10, completed: false, icon: '📝' }]);
+  const todaysPlan = assignedSubjects.slice(0, 3).map((subject, index) => {
+    const topic = (assignedCurriculum.subjects[subject] || ['Foundations and practice'])[index % (assignedCurriculum.subjects[subject]?.length || 1)];
+    return { id: index + 1, subject, topic, duration: Math.max(10, Math.round(userPreferences.dailyGoalMinutes / Math.min(4, assignedSubjects.length + 1))), completed: Boolean(getLessonProgress(learnerProfile?.grade ?? 6, subject, topic)), icon: ['📘', '🧠', '✍️'][index] };
+  }).concat([{ id: 4, subject: 'Review', topic: 'Knowledge check and spaced revision', duration: 10, completed: progressSummary(learnerProfile?.grade).reviewsDue === 0 && progressSummary(learnerProfile?.grade).lessons > 0, icon: '📝' }]);
 
   const completedTasks = todaysPlan.filter(t => t.completed).length;
   const totalTasks = todaysPlan.length;
@@ -102,10 +99,10 @@ export default function StudentDashboard() {
     return 'Good Evening';
   };
 
-  // Overall progress calculation (mock)
-  const overallProgress = 67;
+  const learningSummary = progressSummary(learnerProfile?.grade);
+  const overallProgress = learningSummary.averageMastery;
 
-  const riskLevel = 'Low';
+  const riskLevel = overallProgress === 0 || overallProgress >= 70 ? 'Low' : overallProgress >= 45 ? 'Medium' : 'High';
   const riskColor = riskLevel === 'Low' ? 'bg-green-500' : riskLevel === 'Medium' ? 'bg-yellow-500' : 'bg-red-500';
 
   return (
@@ -326,7 +323,7 @@ export default function StudentDashboard() {
                         <Button
                           size="sm"
                           className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                          onClick={() => navigate('/adaptive-learning')}
+                          onClick={() => task.subject === 'Review' ? navigate('/curriculum') : navigate(`/learn/${learnerProfile?.grade ?? 6}/${encodeURIComponent(task.subject)}/${encodeURIComponent(task.topic)}`)}
                         >
                           <Play className="w-4 h-4 mr-1" />
                           Start
