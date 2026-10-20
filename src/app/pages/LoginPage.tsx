@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { useApp, type UserProfile } from "../context/AppContext";
+import { authenticateLocalAccount, createLocalAccount, readAccounts } from "../services/localAuth";
 import {
   ArrowRight,
   BrainCircuit,
@@ -27,16 +28,6 @@ const learningSignals = [
   { label: "Your progress", value: "Private by design" },
 ];
 
-const readLocalUsers = (): Array<UserProfile & { password: string }> => {
-  try {
-    const value = JSON.parse(localStorage.getItem("eduflow_offline_users") || "[]");
-    return Array.isArray(value) ? value : [];
-  } catch {
-    localStorage.removeItem("eduflow_offline_users");
-    return [];
-  }
-};
-
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setIsAuthenticated, setUserRole, language, setLanguage, setIsOnline, setUserProfile } = useApp();
@@ -52,55 +43,42 @@ export default function LoginPage() {
     navigate(destination);
   };
 
-  const handleLogin = (event: React.FormEvent) => {
+  const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
     const email = formData.email.trim().toLowerCase();
-    const savedUsers = readLocalUsers();
-    const existingUser = savedUsers.find(
-      (user) => user.email.toLowerCase() === email && user.password === formData.password,
-    );
+    const existingUser = await authenticateLocalAccount(email, formData.password);
 
     if (existingUser || (email === "student@eduflow.ai" && formData.password === "demo123")) {
-      completeLogin(
-        existingUser || {
-          id: `demo-${Date.now()}`,
-          name: "Demo Student",
-          email: "student@eduflow.ai",
-          role: "student",
-          createdAt: new Date().toISOString(),
-        },
-        "/dashboard",
-      );
+      completeLogin(existingUser || { id: "demo-student", name: "Demo Student", email: "student@eduflow.ai", role: "student", createdAt: new Date().toISOString() }, "/dashboard");
       return;
     }
 
     toast.error("That sign-in didn’t match our local records.", { description: "Use the demo account or create a new local account." });
   };
 
-  const handleSignup = (event: React.FormEvent) => {
+  const handleSignup = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!formData.name || !formData.email || !formData.password) {
       toast.error("Complete each field to create your learning space.");
       return;
     }
 
-    const savedUsers = readLocalUsers();
+    const savedUsers = readAccounts();
     const normalizedEmail = formData.email.trim().toLowerCase();
     if (savedUsers.some((user) => user.email.toLowerCase() === normalizedEmail)) {
       toast.error("An account with this email already exists.", { description: "Try signing in instead." });
       return;
     }
 
-    const profile: UserProfile & { password: string } = {
-      id: `user-${Date.now()}`,
-      name: formData.name,
-      email: normalizedEmail,
-      password: formData.password,
-      role: "student",
-      createdAt: new Date().toISOString(),
+    const profile: UserProfile = {
+      id: crypto.randomUUID(), name: formData.name.trim(), email: normalizedEmail, role: "student", createdAt: new Date().toISOString(),
     };
-    localStorage.setItem("eduflow_offline_users", JSON.stringify([...savedUsers, profile]));
-    completeLogin(profile, "/onboarding-quiz");
+    try {
+      await createLocalAccount(profile, formData.password);
+      completeLogin(profile, "/onboarding-quiz");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create this account.");
+    }
   };
 
   const useDemo = () => {

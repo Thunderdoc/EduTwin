@@ -13,11 +13,11 @@
 
 ### P0 — production readiness
 
-- [ ] Replace local-only passwords with managed authentication and secure server-side sessions.
+- [~] Replace local-only passwords with managed authentication and secure server-side sessions. The provider-neutral local adapter now uses PBKDF2-SHA256 (210,000 iterations), migrates legacy plaintext records, and never stores new plaintext passwords; hosted identity and server sessions still require deployment.
 - [x] Add client route guards for student and teacher pages; unauthorized roles are redirected safely. Administrator routes remain a backend-era feature because no admin UI exists.
 - [~] Account deletion and 12-hour local session expiry are implemented. Password reset and email verification require the managed authentication service described below.
 - [x] Define a reviewed Supabase/PostgreSQL baseline schema for profiles, classes, enrollments, curricula, lessons, progress, assessments, corrections, consent, and audit events (`supabase/schema.sql`).
-- [ ] Add automated unit, integration, accessibility, and end-to-end browser tests.
+- [~] Add automated unit, integration, accessibility, and end-to-end browser tests. Vitest unit tests now cover authentication, Classes 1–12 catalog integrity, and curriculum approval rules; CI runs tests, a high/critical dependency audit, and the production build. Browser E2E and automated accessibility scans remain.
 - [~] Add error monitoring, audit logs, rate limiting, abuse controls, and privacy/consent flows for minors. A local crash boundary/log and backend audit/consent tables now exist; hosted monitoring and edge rate limiting require deployment infrastructure.
 
 ### P1 — complete Classes 1–12 content
@@ -26,15 +26,15 @@
 - [ ] Store curriculum versions by academic year; map CBSE, Tamil Nadu, ICSE, and other state-board differences accurately.
 - [ ] Add Tamil and other Indian-language content—not just translated interface labels.
 - [ ] Add stream/elective selection for Classes 11–12 (Science, Commerce, Humanities, vocational combinations).
-- [ ] Add teacher review and subject-matter-expert approval workflows.
-- [ ] Add content licensing, citations, age suitability, and correction reporting.
+- [~] Add teacher review and subject-matter-expert approval workflows. Typed draft/review/approval transitions and administrator-only approval validation now exist; the hosted reviewer UI remains.
+- [~] Add content licensing, citations, age suitability, and correction reporting. The content model enforces citations, licensing metadata, age ranges, reviewer metadata, practice, and correction counts; authoritative content still must be imported and reviewed.
 
 ### P1 — make learning real rather than demo data
 
 - [ ] Replace hardcoded dashboard metrics, recommendations, and learning paths with persisted learner data.
 - [ ] Connect lesson completion, quizzes, spaced revision, mastery, and weak-area recommendations.
-- [ ] Connect AI tools to a safe server-side provider; never expose model keys in browser code.
-- [ ] Ground AI answers in approved curriculum content and display sources.
+- [~] Connect AI tools to a safe server-side provider; never expose model keys in browser code. A provider-neutral, cookie-authenticated gateway client and server contract now exist; deployment must supply `VITE_AI_GATEWAY_URL` and the server implementation.
+- [~] Ground AI answers in approved curriculum content and display sources. The gateway contract requires approved context, citations, moderation, limits, and validated source-bearing responses; existing demo generators still need migration to the deployed endpoint.
 - [ ] Add rubric-based assessments, board-exam patterns, mock tests, and teacher feedback.
 - [ ] Implement reliable offline synchronization and conflict handling.
 
