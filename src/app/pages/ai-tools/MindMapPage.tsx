@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Network,
@@ -65,6 +65,47 @@ export default function MindMapPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [savedMaps, setSavedMaps] = useState<SavedMindMap[]>([]);
   const [showSaved, setShowSaved] = useState(false);
+  const [draggingNode, setDraggingNode] = useState<string | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ id: string; offsetX: number; offsetY: number; moved: boolean } | null>(null);
+
+  const pointerToCanvasPercent = (clientX: number, clientY: number) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return null;
+    const screenX = ((clientX - rect.left) / rect.width) * 100;
+    const screenY = ((clientY - rect.top) / rect.height) * 100;
+    return {
+      x: 50 + (screenX - 50) / zoom,
+      y: 50 + (screenY - 50) / zoom,
+    };
+  };
+
+  const startNodeDrag = (event: React.PointerEvent<HTMLDivElement>, node: MindMapNode) => {
+    if (event.button !== 0) return;
+    const point = pointerToCanvasPercent(event.clientX, event.clientY);
+    if (!point) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = { id: node.id, offsetX: node.x - point.x, offsetY: node.y - point.y, moved: false };
+    setDraggingNode(node.id);
+    setSelectedNode(node.id);
+  };
+
+  const moveNode = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const point = pointerToCanvasPercent(event.clientX, event.clientY);
+    if (!point) return;
+    drag.moved = true;
+    const x = Math.max(3, Math.min(97, point.x + drag.offsetX));
+    const y = Math.max(4, Math.min(96, point.y + drag.offsetY));
+    setNodes(current => current.map(node => node.id === drag.id ? { ...node, x, y } : node));
+  };
+
+  const stopNodeDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    dragRef.current = null;
+    setDraggingNode(null);
+  };
 
   // Load saved mind maps
   useEffect(() => {
@@ -480,7 +521,7 @@ export default function MindMapPage() {
           {/* Mind Map Canvas */}
           <Card className="shadow-lg">
             <CardContent className="p-6">
-              <div className="relative w-full h-[600px] bg-white rounded-lg border-2 border-gray-200 overflow-hidden">
+              <div ref={canvasRef} className="relative w-full h-[600px] bg-white rounded-lg border-2 border-gray-200 overflow-hidden select-none touch-none">
                 <svg
                   className="absolute inset-0 w-full h-full"
                   style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}
@@ -513,15 +554,22 @@ export default function MindMapPage() {
                   {nodes.map(node => (
                     <div
                       key={node.id}
-                      className={`absolute cursor-pointer transition-all ${
-                        selectedNode === node.id ? 'scale-110 z-10' : 'hover:scale-105'
-                      }`}
+                      className={`absolute cursor-grab ${draggingNode === node.id ? 'z-20 cursor-grabbing' : selectedNode === node.id ? 'z-10' : ''}`}
                       style={{
                         left: `${node.x}%`,
                         top: `${node.y}%`,
-                        transform: 'translate(-50%, -50%)'
+                        transform: `translate(-50%, -50%) ${selectedNode === node.id && draggingNode !== node.id ? 'scale(1.08)' : ''}`,
+                        transition: draggingNode === node.id ? 'none' : 'transform 150ms ease',
+                        touchAction: 'none'
                       }}
+                      onPointerDown={(event) => startNodeDrag(event, node)}
+                      onPointerMove={moveNode}
+                      onPointerUp={stopNodeDrag}
+                      onPointerCancel={stopNodeDrag}
                       onClick={() => setSelectedNode(node.id)}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Move or select ${node.text}`}
                     >
                       <div
                         className={`px-4 py-2 rounded-lg bg-gradient-to-r ${node.color} text-white shadow-lg ${
@@ -537,6 +585,7 @@ export default function MindMapPage() {
                       {selectedNode === node.id && node.id !== 'root' && (
                         <div className="absolute -top-2 -right-2 flex gap-1">
                           <button
+                            onPointerDown={(e) => e.stopPropagation()}
                             onClick={(e) => {
                               e.stopPropagation();
                               const newText = prompt('Edit text:', node.text);
@@ -547,6 +596,7 @@ export default function MindMapPage() {
                             <Edit2 className="w-3 h-3" />
                           </button>
                           <button
+                            onPointerDown={(e) => e.stopPropagation()}
                             onClick={(e) => {
                               e.stopPropagation();
                               deleteNode(node.id);
@@ -559,6 +609,7 @@ export default function MindMapPage() {
                       )}
                       {selectedNode === node.id && node.level < 2 && (
                         <button
+                          onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
                             e.stopPropagation();
                             addNode(node.id);
@@ -576,7 +627,7 @@ export default function MindMapPage() {
               {/* Instructions */}
               <div className="mt-4 p-4 bg-fuchsia-50 rounded-lg">
                 <p className="text-sm text-gray-700">
-                  <strong>💡 How to use:</strong> Click on any node to select it. Use the buttons to edit text, delete nodes, or add child concepts. Zoom in/out using the controls above.
+                  <strong>💡 How to use:</strong> Drag any node to rearrange the map—the connecting lines follow automatically. Click a node to edit, delete, or add child concepts. Dragging works with a mouse, pen, or touch. Zoom in/out using the controls above.
                 </p>
               </div>
             </CardContent>
