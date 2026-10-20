@@ -15,6 +15,7 @@ const SubjectSelectionPage = lazy(() => import('./pages/SubjectSelectionPage'));
 const CurriculumLibraryPage = lazy(() => import('./pages/CurriculumLibraryPage'));
 
 // Personalization & Autonomous Learning Pages
+const LearnerSetupPage = lazy(() => import('./pages/LearnerSetupPage'));
 const OnboardingQuizPage = lazy(() => import('./pages/OnboardingQuizPage'));
 const KnowledgeGraphPage = lazy(() => import('./pages/KnowledgeGraphPage'));
 const GamificationPage = lazy(() => import('./pages/GamificationPage'));
@@ -126,6 +127,10 @@ export const router = createBrowserRouter(
       Component: studentPage(CurriculumLibraryPage),
     },
     // Personalization & Autonomous Learning Pages
+    {
+      path: '/setup',
+      Component: studentPage(LearnerSetupPage),
+    },
     {
       path: '/onboarding-quiz',
       Component: studentPage(OnboardingQuizPage),

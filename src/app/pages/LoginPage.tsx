@@ -10,7 +10,7 @@ const languages = ['English', 'Tamil', 'Hindi', 'Telugu', 'Malayalam', 'Kannada'
 export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setIsAuthenticated, setUserRole, language, setLanguage, setIsOnline, setUserProfile } = useApp();
+  const { setIsAuthenticated, setUserRole, language, setLanguage, setIsOnline, setUserProfile, learnerProfile } = useApp();
   const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup');
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -29,7 +29,8 @@ export default function LoginPage() {
       const email = formData.email.trim().toLowerCase();
       const existingUser = await authenticateLocalAccount(email, formData.password);
       if (existingUser || (email === 'student@eduflow.ai' && formData.password === 'demo123')) {
-        completeLogin(existingUser || { id: 'demo-student', name: 'Demo Student', email: 'student@eduflow.ai', role: 'student', createdAt: new Date().toISOString() }, '/dashboard');
+        const isDemo = !existingUser;
+        completeLogin(existingUser || { id: 'demo-student', name: 'Demo Student', email: 'student@eduflow.ai', role: 'student', createdAt: new Date().toISOString() }, isDemo || learnerProfile?.setupComplete ? '/dashboard' : '/setup');
         return;
       }
       toast.error('That sign-in did not match our local records.', { description: 'Use the learner demo or create a new account.' });
@@ -46,7 +47,7 @@ export default function LoginPage() {
     try {
       const profile: UserProfile = { id: crypto.randomUUID(), name: formData.name.trim(), email: normalizedEmail, role: 'student', createdAt: new Date().toISOString() };
       await createLocalAccount(profile, formData.password);
-      completeLogin(profile, '/onboarding-quiz');
+      completeLogin(profile, '/setup');
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Could not create this account.'); }
     finally { setIsSubmitting(false); }
   };

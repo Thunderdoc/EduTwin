@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { useState, useEffect } from 'react';
+import { curriculumForGrade } from '../lib/schoolCurriculum';
 
 const learningProgressData = [
   { day: 'Mon', score: 65, id: 'mon' },
@@ -50,7 +51,7 @@ const cognitiveData = [
 ];
 
 export default function StudentDashboard() {
-  const { isOnline, language, userProfile, userPreferences } = useApp();
+  const { isOnline, language, userProfile, userPreferences, learnerProfile, selectedSubjects } = useApp();
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -59,13 +60,17 @@ export default function StudentDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // Daily Learning Plan
-  const todaysPlan = [
-    { id: 1, subject: 'Physics', topic: 'Newton\'s Laws', duration: 20, completed: true, icon: '⚛️' },
-    { id: 2, subject: 'Mathematics', topic: 'Calculus Practice', duration: 15, completed: false, icon: '📐' },
-    { id: 3, subject: 'Chemistry', topic: 'Organic Compounds', duration: 25, completed: false, icon: '🧪' },
-    { id: 4, subject: 'Quiz', topic: 'Weekly Revision', duration: 10, completed: false, icon: '📝' },
-  ];
+  // Daily plan is derived from the assigned learner class and subjects.
+  const assignedCurriculum = curriculumForGrade(learnerProfile?.grade ?? 6);
+  const assignedSubjects = selectedSubjects.length ? selectedSubjects : Object.keys(assignedCurriculum.subjects);
+  const todaysPlan = assignedSubjects.slice(0, 3).map((subject, index) => ({
+    id: index + 1,
+    subject,
+    topic: (assignedCurriculum.subjects[subject] || ['Foundations and practice'])[index % (assignedCurriculum.subjects[subject]?.length || 1)],
+    duration: Math.max(10, Math.round(userPreferences.dailyGoalMinutes / Math.min(4, assignedSubjects.length + 1))),
+    completed: false,
+    icon: ['📘', '🧠', '✍️'][index],
+  })).concat([{ id: 4, subject: 'Review', topic: 'Knowledge check and spaced revision', duration: 10, completed: false, icon: '📝' }]);
 
   const completedTasks = todaysPlan.filter(t => t.completed).length;
   const totalTasks = todaysPlan.length;
@@ -118,7 +123,8 @@ export default function StudentDashboard() {
             </div>
             
             {/* Status Indicators */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              {learnerProfile && <Badge variant="outline" className="bg-white px-4 py-2"><GraduationCap className="mr-2 size-4 text-purple-600" />{learnerProfile.grade === 0 ? 'Pre-primary' : `Class ${learnerProfile.grade}`} · {learnerProfile.board}</Badge>}
               <Badge variant={isOnline ? "default" : "destructive"} className="px-4 py-2">
                 {isOnline ? (
                   <>

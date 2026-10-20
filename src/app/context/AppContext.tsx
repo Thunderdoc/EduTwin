@@ -10,6 +10,19 @@ export interface UserProfile {
   createdAt: string;
 }
 
+export interface LearnerProfile {
+  grade: number;
+  board: 'CBSE' | 'Tamil Nadu' | 'ICSE' | 'State board';
+  academicYear: string;
+  medium: string;
+  firstLanguage: string;
+  additionalLanguages: string[];
+  stream?: 'Science' | 'Commerce' | 'Humanities' | 'Vocational' | 'Custom';
+  goals: string[];
+  examDate?: string;
+  setupComplete: boolean;
+}
+
 // User Preferences Interface
 export interface UserPreferences {
   // Theme Customization
@@ -60,6 +73,8 @@ interface AppContextType {
   setSelectedSubjects: (subjects: string[]) => void;
   selectedSkills: string[];
   setSelectedSkills: (skills: string[]) => void;
+  learnerProfile: LearnerProfile | null;
+  setLearnerProfile: (profile: LearnerProfile | null) => void;
   
   // New: User Profile & Customization
   userProfile: UserProfile | null;
@@ -112,6 +127,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [userRole, setUserRole] = useState<'student' | 'teacher' | null>(null);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [learnerProfile, setLearnerProfile] = useState<LearnerProfile | null>(null);
   
   // New state for user customization
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -129,7 +145,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (isAuthenticated && userProfile) {
       saveToOfflineStorage();
     }
-  }, [isAuthenticated, userProfile, userPreferences, userPlan, selectedSubjects, selectedSkills, language]);
+  }, [isAuthenticated, userProfile, userPreferences, userPlan, selectedSubjects, selectedSkills, learnerProfile, language]);
 
   const saveToOfflineStorage = () => {
     try {
@@ -139,6 +155,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         userPlan,
         selectedSubjects,
         selectedSkills,
+        learnerProfile,
         language,
         isAuthenticated,
         userRole,
@@ -169,6 +186,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setUserPlan(offlineData.userPlan || defaultPlan);
         setSelectedSubjects(offlineData.selectedSubjects || []);
         setSelectedSkills(offlineData.selectedSkills || []);
+        setLearnerProfile(offlineData.learnerProfile || null);
         setLanguage(offlineData.language || 'English');
         setIsAuthenticated(offlineData.isAuthenticated || false);
         setUserRole(offlineData.userRole || null);
@@ -187,6 +205,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setUserPlan(defaultPlan);
       setSelectedSubjects([]);
       setSelectedSkills([]);
+      setLearnerProfile(null);
       setIsAuthenticated(false);
       setUserRole(null);
     } catch (error) {
@@ -243,6 +262,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setSelectedSubjects,
         selectedSkills,
         setSelectedSkills,
+        learnerProfile,
+        setLearnerProfile,
         userProfile,
         setUserProfile,
         userPreferences,
