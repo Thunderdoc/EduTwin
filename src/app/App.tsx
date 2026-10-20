@@ -8,6 +8,7 @@ import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { registerServiceWorker, initPWAInstall, addMetaTags } from './utils/pwa';
 import { useGenerateIcons } from './hooks/useGenerateIcons';
 import { isMobileApp, logDeviceInfo } from './utils/platform';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 
 export default function App() {
   useGenerateIcons();
@@ -37,10 +38,13 @@ export default function App() {
   }
 
   return (
-    <AppProvider>
-      <RouterProvider router={router} />
-      <Toaster position="top-right" richColors />
-      <PWAInstallPrompt />
-    </AppProvider>
+    <AppErrorBoundary>
+      <AppProvider>
+        <a className="skip-link" href="#main-content">Skip to main content</a>
+        <RouterProvider router={router} />
+        <Toaster position="top-right" richColors />
+        <PWAInstallPrompt />
+      </AppProvider>
+    </AppErrorBoundary>
   );
 }

@@ -34,6 +34,8 @@ export interface UserPreferences {
   autoSaveNotes: boolean;
   offlineMode: boolean;
   animationsEnabled: boolean;
+  highContrast: boolean;
+  dyslexiaFriendlyFont: boolean;
 }
 
 // Plan Interface
@@ -50,6 +52,7 @@ interface AppContextType {
   language: string;
   setLanguage: (value: string) => void;
   isAuthenticated: boolean;
+  isHydrated: boolean;
   setIsAuthenticated: (value: boolean) => void;
   userRole: 'student' | 'teacher' | null;
   setUserRole: (role: 'student' | 'teacher' | null) => void;
@@ -89,6 +92,8 @@ const defaultPreferences: UserPreferences = {
   autoSaveNotes: true,
   offlineMode: false,
   animationsEnabled: true,
+  highContrast: false,
+  dyslexiaFriendlyFont: false,
 };
 
 const defaultPlan: UserPlan = {
@@ -103,6 +108,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isOnline, setIsOnline] = useState(true);
   const [language, setLanguage] = useState('English');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [userRole, setUserRole] = useState<'student' | 'teacher' | null>(null);
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
@@ -115,6 +121,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Load from offline storage on mount
   useEffect(() => {
     loadFromOfflineStorage();
+    setIsHydrated(true);
   }, []);
 
   // Save to offline storage whenever important state changes
@@ -149,8 +156,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const offlineDataStr = localStorage.getItem('eduflow_user_data');
       if (offlineDataStr) {
         const offlineData = JSON.parse(offlineDataStr);
+        const lastActive = Date.parse(offlineData.lastSyncedAt || '');
+        const expired = !Number.isFinite(lastActive) || Date.now() - lastActive > 12 * 60 * 60 * 1000;
+        if (expired && offlineData.isAuthenticated) {
+          localStorage.removeItem('eduflow_user_data');
+          setIsAuthenticated(false);
+          setUserRole(null);
+          return;
+        }
         setUserProfile(offlineData.userProfile || null);
-        setUserPreferences(offlineData.userPreferences || defaultPreferences);
+        setUserPreferences({ ...defaultPreferences, ...(offlineData.userPreferences || {}) });
         setUserPlan(offlineData.userPlan || defaultPlan);
         setSelectedSubjects(offlineData.selectedSubjects || []);
         setSelectedSkills(offlineData.selectedSkills || []);
@@ -187,6 +202,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    const root = document.documentElement;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = userPreferences.theme === 'auto' ? (prefersDark ? 'dark' : 'light') : userPreferences.theme;
+    root.dataset.fontSize = userPreferences.fontSize;
+    root.dataset.density = userPreferences.layoutDensity;
+    root.classList.toggle('reduce-motion', !userPreferences.animationsEnabled);
+    root.classList.toggle('high-contrast', userPreferences.highContrast);
+    root.classList.toggle('dyslexia-font', userPreferences.dyslexiaFriendlyFont);
+    root.style.setProperty('--user-accent', userPreferences.accentColor);
+  }, [userPreferences]);
+
+  useEffect(() => {
     // Listen for online/offline events
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -208,6 +235,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         language,
         setLanguage,
         isAuthenticated,
+        isHydrated,
         setIsAuthenticated,
         userRole,
         setUserRole,

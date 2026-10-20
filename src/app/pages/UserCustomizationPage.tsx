@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -40,8 +40,15 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import Navigation from '../components/Navigation';
 
 export default function UserCustomizationPage() {
-  const { userPreferences, updateUserPreferences, userProfile, language, setLanguage } = useApp();
+  const { userPreferences, updateUserPreferences, userProfile, setUserProfile, language, setLanguage, clearOfflineStorage } = useApp();
   const [hasChanges, setHasChanges] = useState(false);
+  const [profileName, setProfileName] = useState(userProfile?.name || '');
+  const [profileEmail, setProfileEmail] = useState(userProfile?.email || '');
+
+  useEffect(() => {
+    setProfileName(userProfile?.name || '');
+    setProfileEmail(userProfile?.email || '');
+  }, [userProfile]);
 
   // Color palette options
   const accentColors = [
@@ -59,18 +66,33 @@ export default function UserCustomizationPage() {
   };
 
   const handleSaveChanges = () => {
-    toast.success('Preferences saved successfully!', {
-      description: 'Your customization settings have been updated.',
-    });
+    if (userProfile && profileName.trim() && profileEmail.trim()) {
+      setUserProfile({ ...userProfile, name: profileName.trim(), email: profileEmail.trim().toLowerCase() });
+    }
+    toast.success('Preferences saved successfully!', { description: 'Your customization settings have been updated.' });
     setHasChanges(false);
   };
 
   const handleResetToDefaults = () => {
-    // Reset to defaults would require calling updateUserPreferences with all default values
-    toast.info('Reset to defaults', {
-      description: 'All settings have been reset to default values.',
-    });
+    updateUserPreferences({ theme: 'auto', accentColor: '#8b5cf6', fontSize: 'medium', layoutDensity: 'comfortable', learningPace: 'medium', difficultyLevel: 'intermediate', dailyGoalMinutes: 60, preferredStudyTime: 'evening', notificationsEnabled: true, reminderFrequency: 'medium', emailNotifications: true, showDigitalTwin: true, autoSaveNotes: true, offlineMode: false, animationsEnabled: true, highContrast: false, dyslexiaFriendlyFont: false });
+    toast.info('All settings were reset to their defaults.');
     setHasChanges(false);
+  };
+
+  const exportMyData = () => {
+    const keys = Object.keys(localStorage).filter((key) => key.startsWith('eduflow_') || key.startsWith('cognilearn_'));
+    const data = Object.fromEntries(keys.map((key) => [key, localStorage.getItem(key)]));
+    const url = URL.createObjectURL(new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), data }, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url; link.download = 'eduflow-my-data.json'; link.click(); URL.revokeObjectURL(url);
+    toast.success('Your data export is ready.');
+  };
+
+  const deleteMyAccount = () => {
+    if (!window.confirm('Delete this local account and all EduFlow data on this device? This cannot be undone.')) return;
+    Object.keys(localStorage).filter((key) => key.startsWith('eduflow_') || key.startsWith('cognilearn_')).forEach((key) => localStorage.removeItem(key));
+    clearOfflineStorage();
+    window.location.assign(import.meta.env.BASE_URL);
   };
 
   return (
@@ -511,17 +533,16 @@ export default function UserCustomizationPage() {
 
                   {/* Animations */}
                   <div className="flex items-center justify-between p-4 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <Sparkles className="w-5 h-5 text-pink-600" />
-                      <div>
-                        <p className="font-semibold">Animations</p>
-                        <p className="text-sm text-gray-500">Enable smooth animations and transitions</p>
-                      </div>
-                    </div>
-                    <Switch
-                      checked={userPreferences.animationsEnabled}
-                      onCheckedChange={(checked) => handlePreferenceChange('animationsEnabled', checked)}
-                    />
+                    <div className="flex items-center gap-3"><Sparkles className="w-5 h-5 text-pink-600" /><div><p className="font-semibold">Animations</p><p className="text-sm text-gray-500">Enable smooth animations and transitions</p></div></div>
+                    <Switch checked={userPreferences.animationsEnabled} onCheckedChange={(checked) => handlePreferenceChange('animationsEnabled', checked)} />
+                  </div>
+                  <div className="flex items-center justify-between p-4 rounded-lg border">
+                    <div><p className="font-semibold">High contrast</p><p className="text-sm text-gray-500">Increase contrast and strengthen keyboard focus indicators</p></div>
+                    <Switch checked={userPreferences.highContrast} onCheckedChange={(checked) => handlePreferenceChange('highContrast', checked)} aria-label="Use high contrast" />
+                  </div>
+                  <div className="flex items-center justify-between p-4 rounded-lg border">
+                    <div><p className="font-semibold">Reading-friendly font</p><p className="text-sm text-gray-500">Use wider spacing and a highly legible typeface</p></div>
+                    <Switch checked={userPreferences.dyslexiaFriendlyFont} onCheckedChange={(checked) => handlePreferenceChange('dyslexiaFriendlyFont', checked)} aria-label="Use reading-friendly font" />
                   </div>
                 </div>
               </CardContent>
@@ -555,24 +576,13 @@ export default function UserCustomizationPage() {
                 {/* Name */}
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    defaultValue={userProfile?.name}
-                    className="h-12"
-                    placeholder="Enter your full name"
-                  />
+                  <Input id="name" value={profileName} onChange={(event) => { setProfileName(event.target.value); setHasChanges(true); }} className="h-12" placeholder="Enter your full name" />
                 </div>
 
                 {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    defaultValue={userProfile?.email}
-                    className="h-12"
-                    placeholder="your@email.com"
-                  />
+                  <Input id="email" type="email" value={profileEmail} onChange={(event) => { setProfileEmail(event.target.value); setHasChanges(true); }} className="h-12" placeholder="your@email.com" />
                 </div>
 
                 {/* Language */}
@@ -594,6 +604,9 @@ export default function UserCustomizationPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <Separator />
+                <div className="rounded-xl border p-4"><h3 className="font-semibold">Your data and account</h3><p className="mt-1 text-sm text-gray-500">Download a portable copy or permanently remove local data from this device.</p><div className="mt-4 flex flex-wrap gap-3"><Button variant="outline" onClick={exportMyData}><Download className="mr-2 h-4 w-4" />Export my data</Button><Button variant="destructive" onClick={deleteMyAccount}>Delete account and data</Button></div></div>
               </CardContent>
             </Card>
           </TabsContent>

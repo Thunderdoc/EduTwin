@@ -1,3 +1,14 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+:root[data-font-size='small'] { font-size: 14px; }
+:root[data-font-size='medium'] { font-size: 16px; }
+:root[data-font-size='large'] { font-size: 18px; }
+:root.dyslexia-font body { font-family: Verdana, Arial, sans-serif !important; letter-spacing: .025em; word-spacing: .08em; line-height: 1.65; }
+:root.high-contrast { filter: contrast(1.18); }
+:root.high-contrast *:focus-visible { outline: 3px solid #000 !important; outline-offset: 3px; }
+:root.reduce-motion *, :root.reduce-motion *::before, :root.reduce-motion *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; } }
+.skip-link { position: fixed; left: 1rem; top: -4rem; z-index: 9999; border-radius: .5rem; background: #111827; color: white; padding: .75rem 1rem; }
+.skip-link:focus { top: 1rem; }

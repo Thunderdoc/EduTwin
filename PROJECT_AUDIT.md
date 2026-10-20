@@ -14,11 +14,11 @@
 ### P0 — production readiness
 
 - [ ] Replace local-only passwords with managed authentication and secure server-side sessions.
-- [ ] Add route guards for student, teacher, and administrator pages.
-- [ ] Add password reset, email verification, account deletion, and session expiry.
-- [ ] Define a backend schema for users, classes, enrollments, progress, assessments, and content.
+- [x] Add client route guards for student and teacher pages; unauthorized roles are redirected safely. Administrator routes remain a backend-era feature because no admin UI exists.
+- [~] Account deletion and 12-hour local session expiry are implemented. Password reset and email verification require the managed authentication service described below.
+- [x] Define a reviewed Supabase/PostgreSQL baseline schema for profiles, classes, enrollments, curricula, lessons, progress, assessments, corrections, consent, and audit events (`supabase/schema.sql`).
 - [ ] Add automated unit, integration, accessibility, and end-to-end browser tests.
-- [ ] Add error monitoring, audit logs, rate limiting, abuse controls, and privacy/consent flows for minors.
+- [~] Add error monitoring, audit logs, rate limiting, abuse controls, and privacy/consent flows for minors. A local crash boundary/log and backend audit/consent tables now exist; hosted monitoring and edge rate limiting require deployment infrastructure.
 
 ### P1 — complete Classes 1–12 content
 
@@ -41,9 +41,9 @@
 ### P2 — user customization and engagement
 
 - [ ] Let users build a timetable from selected class, subjects, exam dates, pace, and daily goal.
-- [ ] Add configurable accessibility: dyslexia-friendly font, contrast, reduced motion, screen-reader labels, keyboard navigation.
-- [ ] Add parent/guardian view, consent controls, teacher-class management, and role-specific dashboards.
-- [ ] Add avatars, themes, dashboard widgets, learning modes, notification windows, and data-export controls.
+- [~] Add configurable accessibility: reading-friendly font, high contrast, reduced motion, responsive font sizes, a skip link, and stronger focus indicators are implemented; a full WCAG audit remains.
+- [~] Add parent/guardian view, consent controls, teacher-class management, and role-specific dashboards. Student/teacher authorization and consent/class backend tables exist; guardian and class-management screens remain.
+- [~] Add avatars, themes, dashboard widgets, learning modes, notification windows, and data-export controls. Themes, learning preferences, notification settings, editable profile details, data export, and deletion now work; avatar upload and dashboard-widget layout remain.
 - [ ] Add streak recovery, badges, class challenges, portfolios, projects, and goal check-ins without punitive gamification.
 - [ ] Add career discovery, practical skills, financial literacy, coding, communication, arts, wellbeing, and exam planning.
 
@@ -57,3 +57,7 @@ VITE_SUPABASE_ANON_KEY=...
 ```
 
 A production implementation should prefer a full Supabase URL variable and keep privileged/service-role keys server-side only.
+
+## Deployment-dependent work
+
+Items involving managed authentication, email delivery, hosted AI, teacher moderation, monitoring, and rate limiting cannot be truthfully completed in a static browser repository alone. They require a provisioned Supabase project and/or server/edge runtime, provider credentials, approved curriculum licenses, and organizational privacy decisions. The repository now contains guarded client routes and `supabase/schema.sql` as the safe implementation baseline; do not mark the remaining deployment items complete until those services are configured and tested.
