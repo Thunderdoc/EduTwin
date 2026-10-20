@@ -12,6 +12,7 @@ const SmartRecommendationsPage = lazy(() => import('./pages/SmartRecommendations
 const TimetablePage = lazy(() => import('./pages/TimetablePage'));
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
 const SubjectSelectionPage = lazy(() => import('./pages/SubjectSelectionPage'));
+const CurriculumLibraryPage = lazy(() => import('./pages/CurriculumLibraryPage'));
 
 // Personalization & Autonomous Learning Pages
 const OnboardingQuizPage = lazy(() => import('./pages/OnboardingQuizPage'));
@@ -119,6 +120,10 @@ export const router = createBrowserRouter(
     {
       path: '/subjects',
       Component: studentPage(SubjectSelectionPage),
+    },
+    {
+      path: '/curriculum',
+      Component: studentPage(CurriculumLibraryPage),
     },
     // Personalization & Autonomous Learning Pages
     {

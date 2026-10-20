@@ -47,6 +47,7 @@ export function Navigation() {
     { path: '/autonomous-learning', label: '⚡ Smart Learning', icon: Zap },
     { path: '/cognitive-learning', label: '🧬 Cognitive Engine', icon: Brain },
     { path: '/subjects', label: 'My Subjects', icon: GraduationCap },
+    { path: '/curriculum', label: 'Curriculum Library', icon: BookOpen },
     { path: '/knowledge-graph', label: '🗺️ Knowledge Map', icon: Brain },
     { path: '/gamification', label: '🏆 Achievements', icon: Star },
     { path: '/analytics-dashboard', label: '📊 Analytics', icon: BookOpen },
