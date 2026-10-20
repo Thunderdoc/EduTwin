@@ -1,9 +1,17 @@
 // PWA Installation and Service Worker utilities
 
 export const registerServiceWorker = async (): Promise<void> => {
-  // Skip service worker registration in development/iframe environments
-  // to avoid SecurityError with MIME type issues
-  if (import.meta.env.DEV || window.location.hostname.includes('figma')) {
+  // Skip service worker registration in development or embedded cross-origin iframe environments
+  // to avoid SecurityError / stale caching issues
+  const isIframe = (() => {
+    try {
+      return window.self !== window.top;
+    } catch {
+      return true;
+    }
+  })();
+
+  if (import.meta.env.DEV || isIframe || window.location.hostname.includes('figma')) {
     console.log('Service Worker registration skipped in development/iframe environment');
     return;
   }

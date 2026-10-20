@@ -1,4 +1,4 @@
-const CACHE_NAME = 'eduflow-cache-v1';
+const CACHE_NAME = 'eduflow-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html'
@@ -9,7 +9,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Opened cache');
         return cache.addAll(urlsToCache).catch((error) => {
           console.log('Cache addAll error:', error);
         });
@@ -21,35 +20,46 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - network-first for HTML navigations, cache-first for static assets
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+    return;
+  }
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', clone));
+          return response;
+        })
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Cache hit - return response
         if (response) {
           return response;
         }
 
         return fetch(event.request).then(
           (response) => {
-            // Check if valid response
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
 
-            // Clone the response
             const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
 
             return response;
           }
         ).catch(() => {
-          // Return offline page or fallback
           return new Response('Offline - Please check your connection', {
             status: 503,
             statusText: 'Service Unavailable',
@@ -84,14 +94,9 @@ self.addEventListener('activate', (event) => {
 // Background sync for offline support
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-data') {
-    event.waitUntil(syncData());
+    event.waitUntil(Promise.resolve());
   }
 });
-
-function syncData() {
-  console.log('Syncing offline data...');
-  return Promise.resolve();
-}
 
 // Push notification support
 self.addEventListener('push', (event) => {

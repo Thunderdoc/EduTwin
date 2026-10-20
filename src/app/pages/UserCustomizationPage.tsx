@@ -77,7 +77,8 @@ export default function UserCustomizationPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50">
       <Navigation />
       
-      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 pt-24">
+      <div className="lg:ml-64">
+        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 pt-20 lg:pt-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-3">
@@ -611,6 +612,7 @@ export default function UserCustomizationPage() {
             </Button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

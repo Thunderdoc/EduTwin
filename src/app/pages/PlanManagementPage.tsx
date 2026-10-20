@@ -141,7 +141,8 @@ export default function PlanManagementPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50">
       <Navigation />
 
-      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 pt-24">
+      <div className="lg:ml-64">
+        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 pt-20 lg:pt-8">
         {/* Header */}
         <div className="text-center mb-12">
           <div className="flex justify-center mb-4">
@@ -395,6 +396,7 @@ export default function PlanManagementPage() {
             <Users className="w-4 h-4 mr-2" />
             Talk to Sales
           </Button>
+        </div>
         </div>
       </div>
     </div>
